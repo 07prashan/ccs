@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capital Complaint System</title>
+  <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+
+  <script src="/js/index.js"></script>
+  <!-- Header -->
+  <header>
+    <h1 class="main-title">Capital Complaint System</h1>
+  </header>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <nav>
+      <a href="/home">Home</a>
+      <a href="/post-complaint">Post a Complaint</a>
+      <a href="#about-us">About Us</a>
+      <a href="#contact-us">Contact Us</a>
+    </nav>
+    <div class="profile-container">
+      <div class="dropdown">
+        <button class="dropbtn">Profile</button>
+        <div class="dropdown-content">
+          <a href="#settings">Settings</a>
+          <a href="#help">Help</a>
+          <a href="/logout">Logout</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="feeds-section">
+    <h2>Recent Complaints</h2>
+    <div id="complaints-container">
+      <!-- Complaints dynamically loaded here -->
+      <p>No complaints yet.</p>
+    </div>
+  </main>
+</body>
+</html>

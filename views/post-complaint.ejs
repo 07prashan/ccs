@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post a Complaint</title>
+    <link rel="stylesheet" href="/css/post-complain.css">
+
+    <script src="/js/post-complain.js"></script>
+</head>
+<body>
+    <script src="/js/post-complain.js"></script>
+    <header>
+        <h1 class="main-title">Capital Complaint System</h1>
+    </header>
+    
+    <!-- Navbar -->
+    <div class="navbar">
+        <nav>
+            <a href="/">Home</a>
+            <a href="/views/post-complaint.ejs">Post a Complaint</a>
+            <a href="#about-us">About Us</a>
+            <a href="#contact-us">Contact Us</a>
+        </nav>
+        <div class="profile-container">
+            <div class="dropdown">
+                <button class="dropbtn">Profile</button>
+                <div class="dropdown-content">
+                    <a href="#settings">Settings</a>
+                    <a href="#help">Help</a>
+                    <a href="/logout">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post a Complaint Section -->
+    <main class="post-complaint">
+        <h1>Register a Complaint</h1>
+        <form action="/submit-complaint" method="POST" enctype="multipart/form-data" id="complaint-form">
+            <div class="form-group">
+                <label for="category">Select Category</label>
+                <select id="category" name="category" required>
+                    <option value="" disabled selected>Select a category</option>
+                    <option value="waste-issues">Waste Issues</option>
+                    <option value="electricity-issues">Electricity Issues</option>
+                    <option value="water-issues">Water Issues</option>
+                    <option value="road-issues">Road Issues</option>
+                    <option value="theft-violence">Theft/Violence</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="complaint-description">Complaint Description</label>
+                <textarea id="complaint-description" name="complaint-description" required placeholder="Describe your complaint..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="file-upload">Upload Image/Video</label>
+                <input type="file" id="file-upload" name="file-upload" accept="image/*, video/*">
+            </div>
+            <div class="form-group">
+                <label for="location">Location</label>
+                <input type="text" id="location" name="location" placeholder="Enter location manually" required>
+                <div id="map"></div>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="submit-btn">Submit Complaint</button>
+            </div>
+        </form>
+    </main>
+
+    <!-- Google Maps Script -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap" async defer></script>
+</body>
+</html>
