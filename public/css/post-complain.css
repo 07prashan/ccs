@@ -1,4 +1,5 @@
-/* General Reset */
+
+General reset
 body {
     margin: 0;
     font-family: Arial, sans-serif;
@@ -103,23 +104,38 @@ body {
     display: block;
 }
 
-/* Post a Complaint Section */
-.post-complaint {
-    padding: 30px;
-    max-width: 800px;
-    margin: 30px auto;
-    background-color: #ffffff;
-    border-radius: 10px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-}
 
-.post-complaint h2 {
+/* Title styling */
+h2 {
     color: #1a73e8;
     text-align: center;
     margin-bottom: 20px;
 }
 
-/* Form Styling */
+/* Form styling */
+.post-complaint {
+    padding: 30px;
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    margin-top: 30px;
+}
+
+
+/* Success message styling */
+#success-message {
+    text-align: center;
+    background-color: #4CAF50;
+    color: white;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    display: none; /* Initially hidden */
+}
+
+
 .form-group {
     margin-bottom: 20px;
 }
@@ -129,9 +145,7 @@ body {
     color: #333;
 }
 
-.form-group textarea, 
-.form-group input, 
-.form-group select {
+.form-group textarea, .form-group input, .form-group select {
     width: 100%;
     padding: 10px;
     font-size: 1em;
@@ -139,21 +153,34 @@ body {
     border-radius: 5px;
 }
 
+/* Improved styling for the textarea */
 .form-group textarea {
     height: 150px;
+    resize: vertical; /* Allow vertical resizing */
 }
 
+/* Styling for the file input */
 .form-group input[type="file"] {
     padding: 5px;
+    border-radius: 5px;
+    background-color: #f4f4f9;
+}
+
+/* Styling for the select dropdown */
+.form-group select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    background-color: white;
 }
 
 /* Google Maps Section */
+/* Map Styling */
 #map {
-    height: 300px;
     width: 100%;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    margin-top: 10px;
+    height: 400px;
+    margin-top: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Submit Button */
@@ -166,9 +193,40 @@ body {
     font-size: 1.2em;
     cursor: pointer;
     width: 100%;
-    transition: background-color 0.3s ease;
 }
 
 .submit-btn:hover {
     background-color: #005b99;
 }
+
+Form container
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .navbar nav {
+        flex-direction: column;
+    }
+    
+    .post-complaint {
+        margin: 10px;
+        padding: 15px;
+    }
+
+    .form-group input[type="submit"] {
+        width: 100%;
+    }
+}
+ 

@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Post a Complaint</title>
     <link rel="stylesheet" href="/css/post-complain.css">
-
-    <script src="/js/post-complain.js"></script>
+    <!-- Leaflet CSS for the map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 </head>
 <body>
-    <script src="/js/post-complain.js"></script>
     <header>
         <h1 class="main-title">Capital Complaint System</h1>
     </header>
@@ -17,9 +16,10 @@
     <!-- Navbar -->
     <div class="navbar">
         <nav>
-            <a href="/">Home</a>
-            <a href="/views/post-complaint.ejs">Post a Complaint</a>
-            <a href="#about-us">About Us</a>
+            <a href="/home">Home</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/post-complaint">Post a Complaint</a>
+            <a href="/Complaint-history">Complaint History</a>
             <a href="#contact-us">Contact Us</a>
         </nav>
         <div class="profile-container">
@@ -36,39 +36,52 @@
 
     <!-- Post a Complaint Section -->
     <main class="post-complaint">
-        <h1>Register a Complaint</h1>
-        <form action="/submit-complaint" method="POST" enctype="multipart/form-data" id="complaint-form">
+        <h2>Post a Complaint</h2>
+         <!-- Success Message (to be displayed dynamically) -->
+        <div id="success-message"></div>
+        <form action="/submit-complaint" method="POST" id="complaint-form" enctype="multipart/form-data">
+            
+
+            <!-- Complaint Category -->
             <div class="form-group">
-                <label for="category">Select Category</label>
+                <label for="category">Complaint Category</label>
                 <select id="category" name="category" required>
-                    <option value="" disabled selected>Select a category</option>
-                    <option value="waste-issues">Waste Issues</option>
-                    <option value="electricity-issues">Electricity Issues</option>
-                    <option value="water-issues">Water Issues</option>
-                    <option value="road-issues">Road Issues</option>
-                    <option value="theft-violence">Theft/Violence</option>
+                    <option value="waste issues">Waste Issues</option>
+                    <option value="electricity issue">Electricity Issue</option>
+                    <option value="water issues">Water Issues</option>
+                    <option value="road issues">Road Issues</option>
+                    <option value="theft/violence">Theft/Violence</option>
                 </select>
             </div>
+            
+            <!-- Complaint Description -->
             <div class="form-group">
-                <label for="complaint-description">Complaint Description</label>
-                <textarea id="complaint-description" name="complaint-description" required placeholder="Describe your complaint..."></textarea>
+                <label for="description">Complaint Description</label>
+                <textarea id="description" name="description" rows="5" required placeholder="Describe your complaint..."></textarea>
             </div>
-            <div class="form-group">
-                <label for="file-upload">Upload Image/Video</label>
-                <input type="file" id="file-upload" name="file-upload" accept="image/*, video/*">
-            </div>
+
+            <!-- Location Section -->
             <div class="form-group">
                 <label for="location">Location</label>
-                <input type="text" id="location" name="location" placeholder="Enter location manually" required>
-                <div id="map"></div>
+                <input type="text" id="location" name="location" placeholder="Select location from the map" readonly required>
+                <div id="map" style="height: 400px; width: 100%;"></div>
             </div>
+
+            <!-- File Upload -->
+            <div class="form-group">
+                <label for="file">Upload Image/Video (Optional)</label>
+                <input type="file" id="file" name="file" accept="image/*, video/*">
+            </div>
+
+            <!-- Submit Button -->
             <div class="form-group">
                 <button type="submit" class="submit-btn">Submit Complaint</button>
             </div>
         </form>
     </main>
 
-    <!-- Google Maps Script -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap" async defer></script>
+    <!-- Leaflet JS for the map -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="/js/post-complain.js"></script>
 </body>
 </html>

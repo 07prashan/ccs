@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+    <header>
+        <h1 class="main-title">Capital Complaint System</h1>
+    </header>
+
+    <div class="navbar">
+        <nav>
+            <a href="/home">Home</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/post-complaint">Post a Complaint</a>
+            <a href="/Complaint-history">Complaint History</a>
+            <a href="#contact-us">Contact Us</a>
+        </nav>
+        <div class="profile-container">
+            <div class="dropdown">
+                <button class="dropbtn">Profile</button>
+                <div class="dropdown-content">
+                    <a href="#settings">Settings</a>
+                    <a href="#help">Help</a>
+                    <a href="/logout">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="dashboard-container">
+        <h2>Dashboard</h2>
+        <div class="stats-grid">
+            <div class="stat-card total-complaints">
+                <h3 id="total-complaints">0</h3>
+                <p>Total Complaints</p>
+            </div>
+            <div class="stat-card pending-complaints">
+                <h3 id="pending-complaints">0</h3>
+                <p>Pending Complaints</p>
+            </div>
+            <div class="stat-card in-process-complaints">
+                <h3 id="in-process-complaints">0</h3>
+                <p>In Process</p>
+            </div>
+            <div class="stat-card closed-complaints">
+                <h3 id="closed-complaints">0</h3>
+                <p>Closed Complaints</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/dashboard.js" defer></script>
+</body>
+</html>
