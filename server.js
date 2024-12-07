@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "user", "views")); // Updated views directory
-app.set("views", path.join(__dirname, "admin", "views"));
+
 app.use(express.static(path.join(__dirname, "user", "public"))); // Updated static files directory
 
 // Session Middleware
@@ -178,7 +178,7 @@ app.get("/admin/home", (req, res) => {
   if (!req.session.user || req.session.user.role !== "admin") {
     return res.redirect("/login");
   }
-  res.render("index", { admin: req.session.user });
+  res.render("admin/index", { admin: req.session.user });
 });
 
 
