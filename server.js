@@ -10,9 +10,12 @@ const { body, validationResult } = require("express-validator"); // Importing ex
 const app = express();
 
 // Middleware
-app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded data
-app.use(express.static(path.join(__dirname, "public"))); // Serve static files from the "public" directory
-app.set("view engine", "ejs"); // Set EJS as the templating engine
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "user", "views")); // Updated views directory
+app.set("views", path.join(__dirname, "admin", "views"));
+app.use(express.static(path.join(__dirname, "user", "public"))); // Updated static files directory
 
 // Session Middleware
 app.use(
@@ -138,8 +141,8 @@ app.post("/login", async (req, res) => {
         .send("Invalid credentials. <a href='/login'>Try again</a>.");
     }
 
-    // Store user session data
-    req.session.user = {
+     // Store user session data
+     req.session.user = {
       id: user._id,
       first_name: user.first_name,
       last_name: user.last_name,
@@ -147,12 +150,19 @@ app.post("/login", async (req, res) => {
       role: user.role,
     };
 
-    res.redirect("/home");
+    // Redirect based on role
+    if (user.role === "admin") {
+      res.redirect("/admin/home");
+    } else {
+      res.redirect("/home");
+    }
   } catch (err) {
     console.error(err);
     res.status(500).send("Error logging in.");
   }
 });
+
+
 
 // Home page
 app.get("/home", (req, res) => {
@@ -161,6 +171,16 @@ app.get("/home", (req, res) => {
   }
   res.render("index", { user: req.session.user });
 });
+
+
+// Admin Home Page
+app.get("/admin/home", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.redirect("/login");
+  }
+  res.render("index", { admin: req.session.user });
+});
+
 
 // Logout route
 app.get("/logout", (req, res) => {
@@ -191,7 +211,10 @@ app.post(
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ 
+        success: false, 
+        errors: errors.array() 
+      });
     }
 
     try {
@@ -217,10 +240,16 @@ app.post(
       });
 
       await newComplaint.save();
+      // Instead of redirect, you can send a JSON response
+      // res.json({ success: true, complaintNumber: newComplaint.complaintNumber });
       res.redirect("/complaint-history");
     } catch (error) {
       console.error("Error submitting complaint:", error);
-      res.status(500).send("Error submitting complaint.");
+      res.status(500).json({ 
+        success: false, 
+        message: "Error submitting complaint",
+        error: error.message 
+      });
     }
   }
 );
@@ -300,8 +329,92 @@ app.get("/complaint-details/:id", async (req, res) => {
   }
 });
 
+// Settings page route
+app.get("/settings", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/login");
+  }
+  res.render("settings", { user: req.session.user });
+});
+
+// Password change route
+app.post("/change-password", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+
+  // Validate input
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "All fields are required" 
+    });
+  }
+
+  // Check if new password matches confirm password
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "New passwords do not match" 
+    });
+  }
+
+  // Check password complexity (optional but recommended)
+  if (newPassword.length < 6) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "New password must be at least 6 characters long" 
+    });
+  }
+
+  try {
+    // Find the user in the database
+    const user = await User.findById(req.session.user.id);
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isMatch) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Current password is incorrect" 
+      });
+    }
+
+    // Hash the new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password
+    user.password = hashedNewPassword;
+    await user.save();
+
+    res.json({ 
+      success: true, 
+      message: "Password changed successfully" 
+    });
+  } catch (error) {
+    console.error("Password change error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Error changing password" 
+    });
+  }
+});
+
+
 // Start the server
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
+
 });
+

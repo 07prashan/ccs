@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings</title>
+    <link rel="stylesheet" href="/css/settings.css">
+    <script src="/js/settings.js" defer></script>
+    
+    <script src="https://kit.fontawesome.com/98db13911d.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <header>
+        <h1 class="main-title">Capital Complaint System</h1>
+    </header>
+    
+    <!-- Navbar -->
+    <div class="navbar">
+        <nav>
+            <a href="/home">Home</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/post-complaint">Post a Complaint</a>
+            <a href="/Complaint-history">Complaint History</a>
+            <a href="#contact-us">Contact Us</a>
+        </nav>
+        <div class="profile-container">
+            <div class="dropdown">
+                <button class="dropbtn">Profile</button>
+                <div class="dropdown-content">
+                    <a href="/settings">Settings</a>
+                    <a href="#help">Help</a>
+                    <a href="/logout">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-container">
+        <h2>Change Password</h2>
+        <form id="password-form">
+            <!-- Current Password -->
+            <div class="password-field">
+                <label for="current-password">Current Password</label>
+                <input type="password" id="current-password" placeholder="Enter your current password">
+                <i class="fa-regular fa-eye" data-input="current-password"></i>
+            </div>
+
+            <!-- New Password -->
+            <div class="password-field">
+                <label for="new-password">New Password</label>
+                <input type="password" id="new-password" placeholder="Enter your new password">
+                <i class="fa-regular fa-eye" data-input="new-password"></i>
+            </div>
+
+            <!-- Confirm New Password -->
+            <div class="password-field">
+                <label for="confirm-password">Confirm New Password</label>
+                <input type="password" id="confirm-password" placeholder="Confirm your new password">
+                <i class="fa-regular fa-eye" data-input="confirm-password"></i>
+            </div>
+
+            <button type="submit">Change Password</button>
+        </form>
+    </div>
+    <script src="/js/settings.js"></script>
+</body>
+</html>

@@ -158,9 +158,9 @@ document.getElementById("complaint-form").addEventListener("submit", (e) => {
     e.preventDefault(); // Prevent default form submission behavior
 
     const category = document.getElementById("category").value;
-    const description = document.getElementById("complaint-description").value;
+    const description = document.getElementById("description").value;
     const location = document.getElementById("location").value;
-    const fileInput = document.getElementById("file-upload");
+    const fileInput = document.getElementById("file");
     const file = fileInput.files[0]; // Get the uploaded file
 
     // Validate inputs
@@ -174,24 +174,32 @@ document.getElementById("complaint-form").addEventListener("submit", (e) => {
     formData.append("category", category);
     formData.append("description", description);
     formData.append("location", location);
-    formData.append("file", file);
+    // Append file only if it exists
+    if (file) {
+        formData.append("file", file);
+    }
 
     fetch("/submit-complaint", {
         method: "POST",
-        body: formData,
+        body: formData
     })
-        .then((response) => response.json())
-        .then((data) => {
-            if (data.success) {
-                alert("Thank you for posting a complaint!");
-                document.getElementById("complaint-form").reset();
-                window.location.reload(); // Reload the page to show success message
-            } else {
-                alert("Failed to submit complaint. Please try again.");
-            }
-        })
-        .catch((err) => {
-            console.error("Error submitting complaint:", err);
-            alert("An error occurred while submitting the complaint.");
-        });
+    .then((response) => {
+        if (response.redirected) {
+            // If redirected, navigate to the new URL
+            window.location.href = response.url;
+        } else {
+            // If not redirected, try to parse response
+            return response.json();
+        }
+    })
+    .then((data) => {
+        if (data && data.success) {
+            alert("Complaint submitted successfully!");
+            document.getElementById("complaint-form").reset();
+        }
+    })
+    .catch((err) => {
+        console.error("Error submitting complaint:", err);
+        alert("An error occurred while submitting the complaint.");
+    });
 });

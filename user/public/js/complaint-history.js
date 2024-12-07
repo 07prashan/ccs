@@ -12,18 +12,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-
-
-
-
 // Wait for the document to fully load
 document.addEventListener("DOMContentLoaded", function() {
     // Get all 'View Details' buttons
     const viewDetailsButtons = document.querySelectorAll(".view-details-btn");
   
     // Add click event listener to each button
-    viewDetailsButtons.forEach(button => {
-      button.addEventListener("click", function() {
+    viewDetailsButtons.forEach((button) => {
+      button.addEventListener("click", function (event) {
+        event.preventDefault(); // Prevent form submission or link navigation
+        
         // Get the complaint ID from the button's data attribute
         const complaintId = button.getAttribute("data-complaint-id");
   
@@ -31,12 +29,11 @@ document.addEventListener("DOMContentLoaded", function() {
         const complaintDetailsRow = document.getElementById(`details-${complaintId}`);
   
         // Toggle the display of the complaint details
-        if (complaintDetailsRow.style.display === "none" || complaintDetailsRow.style.display === "") {
-          complaintDetailsRow.style.display = "table-row";  // Show the details
-        } else {
-          complaintDetailsRow.style.display = "none";  // Hide the details
-        }
-      });
+      if (complaintDetailsRow) {
+        const isHidden = complaintDetailsRow.style.display === "none" || !complaintDetailsRow.style.display;
+        complaintDetailsRow.style.display = isHidden ? "table-row" : "none"; // Toggle visibility
+      }
     });
   });
+});
   
