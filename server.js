@@ -6,17 +6,42 @@ const path = require("path");
 const session = require("express-session");
 const multer = require("multer");
 const { body, validationResult } = require("express-validator"); // Importing express-validator
-
 const app = express();
+const router = express.Router();
+// const User = require('../models/User'); // Import User model
+
+
+// const PORT = process.env.PORT || 3000;
+// require("dotenv").config(); // For environment variables
 
 // Middleware
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+// Set up the view engine to use EJS for rendering
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "user", "views")); // Updated views directory
 
-app.use(express.static(path.join(__dirname, "user", "public"))); // Updated static files directory
+// Set up static file directories for each role
+app.use(express.static(path.join(__dirname, "user", "public")));
+app.use("/admin", express.static(path.join(__dirname, "admin", "public")));
+app.use("/administration", express.static(path.join(__dirname, "administration", "public")));
 
+app.use('/admin/public', express.static(path.join(__dirname, 'admin', 'public')));
+
+// Add view directories for user, admin, and administration roles
+app.set("views", [
+  path.join(__dirname, "user", "views"),
+  path.join(__dirname, "admin", "views"),
+  path.join(__dirname, "administration", "views"),
+]);
+
+
+// Middleware to check if user is an admin or developer
+function checkAdminOrDeveloper(req, res, next) {
+  if (req.user.role !== 'admin' && req.user.role !== 'developer') {
+    return res.status(403).send('Access denied');
+  }
+  next();
+}
 // Session Middleware
 app.use(
   session({
@@ -44,7 +69,7 @@ const userSchema = new mongoose.Schema({
   contact_no: String,
   email: { type: String, unique: true },
   password: String,
-  role: { type: String, enum: ["user", "admin", "administrative"] },
+  role: { type: String, enum: ["user", "admin", "administrative"], default: "user" }, // Default role
 });
 
 const User = mongoose.model("User", userSchema); // Compile the user model
@@ -62,6 +87,7 @@ const complaintSchema = new mongoose.Schema({
 });
 
 const Complaint = mongoose.model("Complaint", complaintSchema); // Compile the complaint model
+module.exports = Complaint;
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
@@ -73,6 +99,7 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage: storage }); // File upload configuration
+
 
 // Routes
 
@@ -99,27 +126,28 @@ app.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { first_name, last_name, contact_no, email, password, role } = req.body;
+    const { first_name, last_name, contact_no, email, password } = req.body;
 
     try {
-      const hashedPassword = await bcrypt.hash(password, 10); // Hash the password
+      const hashedPassword = await bcrypt.hash(password, 10);
       const newUser = new User({
         first_name,
         last_name,
         contact_no,
         email,
         password: hashedPassword,
-        role,
       });
 
       await newUser.save();
-      res.redirect("/home");
+      res.redirect("/login"); // Redirect to login after successful signup
     } catch (err) {
       console.error(err);
       res.status(500).send("Error signing up. Email may already exist.");
     }
   }
 );
+
+
 
 // Login route to authenticate users
 app.post("/login", async (req, res) => {
@@ -129,20 +157,15 @@ app.post("/login", async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res
-        .status(401)
-        .send("Invalid credentials. <a href='/login'>Try again</a>.");
+      return res.status(401).send("Invalid credentials.");
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res
-        .status(401)
-        .send("Invalid credentials. <a href='/login'>Try again</a>.");
+      return res.status(401).send("Invalid credentials.");
     }
 
-     // Store user session data
-     req.session.user = {
+    req.session.user = {
       id: user._id,
       first_name: user.first_name,
       last_name: user.last_name,
@@ -150,36 +173,50 @@ app.post("/login", async (req, res) => {
       role: user.role,
     };
 
-    // Redirect based on role
+    // Redirect based on the user's role
     if (user.role === "admin") {
       res.redirect("/admin/home");
+    } else if (user.role === "administrative") {
+      res.redirect("/administration/home");
     } else {
       res.redirect("/home");
     }
   } catch (err) {
-    console.error(err);
+    console.error("Login error:", err);
     res.status(500).send("Error logging in.");
   }
 });
 
-
-
-// Home page
+// User Home Page
 app.get("/home", (req, res) => {
-  if (!req.session.user) {
+  if (!req.session.user || req.session.user.role !== "user") {
     return res.redirect("/login");
   }
-  res.render("index", { user: req.session.user });
+  res.render(path.join(__dirname, "user", "views", "index"), {
+    user: req.session.user,
+  });
 });
-
 
 // Admin Home Page
 app.get("/admin/home", (req, res) => {
   if (!req.session.user || req.session.user.role !== "admin") {
     return res.redirect("/login");
   }
-  res.render("admin/index", { admin: req.session.user });
+  res.render(path.join(__dirname, "admin", "views", "index"), {
+    admin: req.session.user,
+  });
 });
+
+// Administrative Home Page
+app.get("/administration/home", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "administrative") {
+    return res.redirect("/login");
+  }
+  res.render(path.join(__dirname, "administration", "views", "index"), {
+    admin: req.session.user,
+  });
+});
+
 
 
 // Logout route
@@ -192,6 +229,7 @@ app.get("/logout", (req, res) => {
   });
 });
 
+
 // Post a complaint page
 app.get("/post-complaint", (req, res) => {
   if (req.session.user) {
@@ -200,6 +238,16 @@ app.get("/post-complaint", (req, res) => {
     res.redirect("/login");
   }
 });
+
+
+// Admin Routes
+app.get("/admin", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.redirect("/login");
+  }
+  res.render(path.join(__dirname, "admin", "views", "index"));
+});
+
 
 // Submit a complaint
 app.post(
@@ -411,10 +459,158 @@ app.post("/change-password", async (req, res) => {
 });
 
 
+
+
+
+
+
+
+
+//admin view
+// Admin Routes
+app.get("/admin", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.redirect("/login");
+  }
+  res.render(path.join(__dirname, "admin", "views", "index"));
+});
+
+//Import the Category Model in server.js
+const Category = require('./models/Category');  // Make sure the path is correct
+
+// Admin Dashboard Route
+app.get("/admin/dashboard", async (req, res) => {
+  // Log session user for debugging
+  console.log(req.session.user);
+
+  // Check if the user is logged in and has admin role
+  if (!req.session.user || req.session.user.role !== "admin") {
+      return res.redirect("/login");
+  }
+  
+  try {
+      // Fetch stats for admin
+      const totalUsers = await User.countDocuments();
+      const totalCategories = await Category.countDocuments(); // Assuming a `Category` model
+      const totalComplaints = await Complaint.countDocuments();
+      const pendingComplaints = await Complaint.countDocuments({ status: "pending" });
+      const inProcessComplaints = await Complaint.countDocuments({ status: "in-process" });
+      const closedComplaints = await Complaint.countDocuments({ status: "closed" });
+//  // Log values to debug
+//  console.log('Total Users:', totalUsers);
+//  console.log('Total Categories:', totalCategories);
+//  console.log('Total Complaints:', totalComplaints);
+      // Render admin's dashboard
+      res.render(path.join(__dirname, "admin", "views", "dashboard"), {
+          admin: req.session.user,
+          stats: {
+              totalUsers,
+              totalCategories,
+              totalComplaints,
+              pendingComplaints,
+              inProcessComplaints,
+              closedComplaints,
+          },
+      });
+  } catch (err) {
+      console.error("Error loading admin dashboard:", err);
+      res.status(500).send("Error loading dashboard.");
+  }
+});
+
+//routes in admin page
+//ADD CATEGORY BY ADMIN
+// Run this script separately to insert categories into your database
+// const mongoose = require('mongoose');
+// const Category = require('./models/Category');  // Import your Category model
+
+// MongoDB connection
+// mongoose.connect('mongodb+srv://prashant:204060bde@cluster0.veh0f.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+//     useNewUrlParser: true,
+//     useUnifiedTopology: true,
+// })
+// Wrap the await in an async function
+const createCategories = async () => {
+  try {
+    await Category.create([
+      { name: 'Waste Issue', description: 'Waste disposal related issues.' },
+      { name: 'Electricity Issue', description: 'Issues related to electricity.' },
+      { name: 'Water Issue', description: 'Issues related to water supply.' },
+      { name: 'Road Issue', description: 'Issues related to roads.' },
+      { name: 'Theft/Violence', description: 'Cases of theft and violence.' }
+    ]);
+    console.log("Categories inserted successfully!");
+  } catch (error) {
+    console.error("Error inserting categories:", error);
+  }
+};
+
+// Call the async function
+createCategories();
+
+
+
+
+
+// POST route to add category
+app.post("/admin/add-category", async (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+      return res.redirect("/login");
+  }
+
+  const { name, description } = req.body;
+
+  try {
+      // Save the category to the database
+      const newCategory = new Category({
+          name: name,
+          description: description
+      });
+
+      await newCategory.save();
+
+      // Respond with success
+      res.json({ success: true });
+  } catch (error) {
+      console.error("Error adding category:", error);
+      res.json({ success: false });
+  }
+});
+
+
+
+
+//routes
+
+
+app.get("/admin/complaint-history", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.redirect("/login");
+  }
+  res.render(path.join(__dirname, "admin", "views", "complaint-history"));
+});
+
+app.get("/admin/settings", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.redirect("/login");
+  }
+  res.render(path.join(__dirname, "admin", "views", "settings"));
+});
+
+
+// Logout
+app.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).send("Error logging out.");
+    }
+    res.redirect("/login");
+  });
+});
+
 // Start the server
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 
 });
-

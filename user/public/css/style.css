@@ -79,4 +79,20 @@ body {
   a:hover {
     text-decoration: underline;
   }
+  .invalid {
+    border-color: red;
+  }
   
+  .error-message {
+    margin-top: 5px;
+    display: block;
+  }
+  .invalid {
+    border-color: red;
+  }
+  
+  .error-message {
+    margin-top: 5px;
+    display: block;
+  }
+    

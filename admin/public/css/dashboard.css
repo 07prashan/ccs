@@ -104,149 +104,35 @@ body {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* Complaints Section */
-.complaints {
-    padding: 20px;
-    max-width: 800px;
-    margin: 0 auto;
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
 }
 
-.complaints h1 {
+.stat-card {
+    background: #ffffff;
+    padding: 20px;
     text-align: center;
-    margin-bottom: 20px;
-}
-
-/* Post Complaint Form */
-.post-complain {
-    padding: 20px;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.post-complain form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.post-complain form label {
-    font-weight: bold;
-}
-
-.post-complain form textarea,
-.post-complain form input {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-.post-complain form button {
-    padding: 10px;
-    border: none;
-    border-radius: 5px;
-    background-color: #1a73e8;
-    color: white;
-    font-size: 1em;
-    cursor: pointer;
-}
-
-.post-complain form button:hover {
-    background-color: #105cb6;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* Feeds Section */
-.feeds-section {
-    padding: 20px;
-    max-width: 800px;
-    margin: 0 auto;
-    background-color: #ffffff;
     border-radius: 10px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-    margin-top: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.feeds-section h2 {
-    color: #1a73e8;
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.complaint-card {
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    background-color: #f9f9f9;
-}
-
-.complaint-card img {
-    width: 100%;
-    height: auto;
-    object-fit: cover;
-}
-
-.complaint-card .card-content {
-    padding: 15px;
-}
-
-.complaint-card .description {
-    font-size: 1.2em;
-    margin-bottom: 10px;
+.stat-card h3 {
+    margin: 0;
+    font-size: 2em;
     color: #333;
 }
 
-.complaint-card .location {
-    font-size: 0.9em;
-    color: #666;
+.stat-card p {
+    margin: 5px 0 0;
+    color: #777;
 }
 
-.complaint-card .status {
-    text-align: center;
-    font-weight: bold;
-    margin-top: 10px;
-    padding: 10px;
-    border-radius: 5px;
-}
-
-.status.solved {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.status.unsolved {
-    background-color: #f8d7da;
-    color: #721c24;
-}
+/* Colors for Specific Cards */
+.total-users { background: #14dd1b; color: black; }
+.total-categories { background: #8240eb; color: black; }
+.total-complaints { background: #1a73e8; color: black; }
+.pending-complaints { background: #ffc107; color: #333; }
+.in-process-complaints { background: #17a2b8; color: black; }
+.closed-complaints { background: #ed8cd4; color: black; }

@@ -1,21 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Capital Complaint System</title>
-  <link rel="stylesheet" href="/admin/public/css/index.css">
-  <script src="/admin/public/js/index.js" defer></script>
-  
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/admin/public/css/dashboard.css">
+    <script src="/admin/public/js/dashboard.js" defer></script>
 </head>
 <body>
+    <header>
+        <h1 class="main-title">Capital Complaint System</h1>
+    </header>
 
-  <!-- Header -->
-  <header>
-    <h1 class="main-title">Capital Complaint System</h1>
-  </header>
-
-  <!-- Navbar -->
+   <!-- Navbar -->
   <div class="navbar">
     <nav>
         <a href="/admin/home">Home</a>
@@ -24,7 +21,7 @@
         <div class="dropdown">
             <button class="dropbtn">Admin Management</button>
             <div class="dropdown-content">
-                <a href="/admin/dashboard">Dashboard</a>
+                <a href="/admin/dashboard.ejs">Dashboard</a>
                 <a href="/admin/add-category">Add Category</a>
                 <a href="/admin/manage-users">Manage Users</a>
             </div>
@@ -73,13 +70,34 @@
 </div>
 
 
-  <!-- Main Content -->
-  <main class="feeds-section">
-    <h2>Recent Complaints</h2>
-    <div id="complaints-container">
-      <!-- Complaints dynamically loaded here -->
-      <p>No complaints yet.</p>
+<section class="categories-section">
+    <h1>Categories</h1>
+
+    <!-- Display Existing Categories -->
+    <div class="existing-categories">
+        <h2>Existing Categories</h2>
+        <ul id="category-list">
+            <% categories.forEach(category => { %>
+                <li><%= category.name %></li>
+            <% }) %>
+        </ul>
     </div>
-  </main>
+
+    <!-- Add New Category Form -->
+    <div class="add-category-form">
+        <h2>Add New Category</h2>
+        <form action="/admin/add-category" method="POST" id="add-category-form">
+            <label for="category-name">Category Name:</label>
+            <input type="text" id="category-name" name="category-name" required>
+
+            <label for="category-description">Category Description:</label>
+            <textarea id="category-description" name="category-description" required></textarea>
+
+            <button type="submit">Add Category</button>
+        </form>
+    </div>
+</section>
+
+
 </body>
 </html>
