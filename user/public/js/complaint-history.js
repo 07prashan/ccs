@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     complaintRows.forEach(row => {
         row.addEventListener('click', () => {
             const complaintNumber = row.querySelector('td:nth-child(2)').textContent;
-            alert(`Complaint ${complaintNumber} clicked!`);
+            // alert(`Complaint ${complaintNumber} clicked!`);
         });
     });
 });

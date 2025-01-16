@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-    <link rel="stylesheet" href="/admin/public/css/dashboard.css">
-    <script src="/admin/public/js/dashboard.js" defer></script>
+    <link rel="stylesheet" href="/admin/public/css/add-category.css">
+    <script src="/admin/public/js/add-category.js" defer></script>
 </head>
 <body>
     <header>
@@ -68,36 +68,52 @@
         </div>
     </div>
 </div>
-
-
 <section class="categories-section">
     <h1>Categories</h1>
+<!-- 
+    Success/Error Messages
+    <% if (locals.error) { %>
+        <div class="alert alert-danger"><%= error %></div>
+    <% } %>
 
-    <!-- Display Existing Categories -->
-    <div class="existing-categories">
-        <h2>Existing Categories</h2>
-        <ul id="category-list">
-            <% categories.forEach(category => { %>
-                <li><%= category.name %></li>
-            <% }) %>
-        </ul>
-    </div>
+    <% if (locals.success) { %>
+        <div class="alert alert-success"><%= success %></div>
+    <% } %> -->
 
     <!-- Add New Category Form -->
     <div class="add-category-form">
         <h2>Add New Category</h2>
-        <form action="/admin/add-category" method="POST" id="add-category-form">
-            <label for="category-name">Category Name:</label>
-            <input type="text" id="category-name" name="category-name" required>
+        <form id="categoryForm" action="/admin/add-category" method="POST">
+            <div class="form-group">
+                <label for="name">Category Name:</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
 
-            <label for="category-description">Category Description:</label>
-            <textarea id="category-description" name="category-description" required></textarea>
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
 
-            <button type="submit">Add Category</button>
+            <button type="submit" class="btn btn-primary">Add Category</button>
         </form>
     </div>
-</section>
 
+    <!-- Display Existing Categories -->
+    <div class="existing-categories">
+        <h2>Existing Categories</h2>
+        <div id="category-list">
+            <% categories.forEach((category) => { %>
+                <div class="category-item">
+                    <h3><%= category.name %></h3>
+                    <p><%= category.description %></p>
+                    <button class="edit-btn" data-id="<%= category._id %>">Edit</button>
+                    <button class="delete-btn" data-id="<%= category._id %>">Delete</button>
+                </div>
+            <% }) %>
+        </div>
+        
+    </div>
+</section>
 
 </body>
 </html>

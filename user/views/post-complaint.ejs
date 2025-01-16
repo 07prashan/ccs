@@ -39,20 +39,20 @@
     <!-- Post a Complaint Section -->
     <main class="post-complaint">
         <h2>Post a Complaint</h2>
-         <!-- Success Message (to be displayed dynamically) -->
+        <!-- Success Message (to be displayed dynamically) -->
         <div id="success-message"></div>
         <form action="/submit-complaint" method="POST" id="complaint-form" enctype="multipart/form-data">
-            
-
             <!-- Complaint Category -->
             <div class="form-group">
                 <label for="category">Complaint Category</label>
                 <select id="category" name="category" required>
-                    <option value="waste issues">Waste Issues</option>
-                    <option value="electricity issue">Electricity Issue</option>
-                    <option value="water issues">Water Issues</option>
-                    <option value="road issues">Road Issues</option>
-                    <option value="theft/violence">Theft/Violence</option>
+                    <% if (categories && categories.length) { %>
+                        <% categories.forEach(category => { %>
+                            <option value="<%= category.name %>"><%= category.name %></option>
+                        <% }); %>
+                    <% } else { %>
+                        <option>No categories available</option>
+                    <% } %>
                 </select>
             </div>
             
@@ -84,6 +84,5 @@
 
     <!-- Leaflet JS for the map -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <!-- <script src="/js/post-complain.js"></script> -->
 </body>
 </html>

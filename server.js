@@ -8,11 +8,9 @@ const multer = require("multer");
 const { body, validationResult } = require("express-validator"); // Importing express-validator
 const app = express();
 const router = express.Router();
+const Category = require('./models/Category');  // Add this ONCE at the top with other requires
 // const User = require('../models/User'); // Import User model
 
-
-// const PORT = process.env.PORT || 3000;
-// require("dotenv").config(); // For environment variables
 
 // Middleware
 app.use(express.json());
@@ -26,8 +24,11 @@ app.use("/admin", express.static(path.join(__dirname, "admin", "public")));
 app.use("/administration", express.static(path.join(__dirname, "administration", "public")));
 
 app.use('/admin/public', express.static(path.join(__dirname, 'admin', 'public')));
-
+// Serve static files from the 'uploads' directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Add view directories for user, admin, and administration roles
+// Make sure this directory exists
+const uploadsDirectory = path.join(__dirname, 'uploads');
 app.set("views", [
   path.join(__dirname, "user", "views"),
   path.join(__dirname, "admin", "views"),
@@ -70,6 +71,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String,
   role: { type: String, enum: ["user", "admin", "administrative"], default: "user" }, // Default role
+  regDate: { type: Date, default: Date.now },
 });
 
 const User = mongoose.model("User", userSchema); // Compile the user model
@@ -89,16 +91,35 @@ const complaintSchema = new mongoose.Schema({
 const Complaint = mongoose.model("Complaint", complaintSchema); // Compile the complaint model
 module.exports = Complaint;
 
-// Configure Multer for file uploads
+
+
+
+// Define storage engine for multer
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
+  destination: (req, file, cb) => {
+      cb(null, path.join(__dirname, 'uploads'));  // Upload folder
   },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
+  filename: (req, file, cb) => {
+      cb(null, Date.now() + '-' + file.originalname);  // Unique filename
+  }
 });
-const upload = multer({ storage: storage }); // File upload configuration
+
+// Set up multer for single file uploads
+const upload = multer({ storage: storage });
+
+// Upload route for handling file uploads
+app.post('/upload', upload.single('file'), (req, res) => {
+  console.log(req.file);  // Check the uploaded file details
+  res.send('File uploaded successfully');
+});
+
+app.post('/upload', upload.single('file'), (req, res) => {
+  console.log("Uploaded file path:", req.file.path);  // Log the file path
+  res.send('File uploaded successfully');
+});
+
+
+
 
 
 // Routes
@@ -231,22 +252,41 @@ app.get("/logout", (req, res) => {
 
 
 // Post a complaint page
-app.get("/post-complaint", (req, res) => {
-  if (req.session.user) {
-    res.render("post-complaint");
-  } else {
-    res.redirect("/login");
-  }
-});
+// app.get("/post-complaint", (req, res) => {
+//   if (req.session.user) {
+//     res.render("post-complaint");
+//   } else {
+//     res.redirect("/login");
+//   }
+// });
 
+// Route to fetch categories for the user (for "post-complaint.ejs")
+// app.get("/user/post-complaint", async (req, res) => {
+//   try {
+//     // Fetch all categories from the database
+//     const categories = await Category.find({});
+//     // Pass categories to the view
+//     res.render("post-complaint", { categories }); 
+//   } catch (error) {
+//     console.error("Error fetching categories for user view:", error);
+//     res.status(500).send("Error loading page.");
+//   }
+// });
 
-// Admin Routes
-app.get("/admin", (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") {
+app.get("/post-complaint", async (req, res) => {
+  if (!req.session.user) {
     return res.redirect("/login");
   }
-  res.render(path.join(__dirname, "admin", "views", "index"));
+  
+  try {
+    const categories = await Category.find({});
+    res.render("post-complaint", { categories });
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    res.status(500).send("Error loading categories.");
+  }
 });
+
 
 
 // Submit a complaint
@@ -475,8 +515,7 @@ app.get("/admin", (req, res) => {
   res.render(path.join(__dirname, "admin", "views", "index"));
 });
 
-//Import the Category Model in server.js
-const Category = require('./models/Category');  // Make sure the path is correct
+
 
 // Admin Dashboard Route
 app.get("/admin/dashboard", async (req, res) => {
@@ -518,36 +557,36 @@ app.get("/admin/dashboard", async (req, res) => {
   }
 });
 
-//routes in admin page
-//ADD CATEGORY BY ADMIN
-// Run this script separately to insert categories into your database
-// const mongoose = require('mongoose');
-// const Category = require('./models/Category');  // Import your Category model
 
-// MongoDB connection
-// mongoose.connect('mongodb+srv://prashant:204060bde@cluster0.veh0f.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
-//     useNewUrlParser: true,
-//     useUnifiedTopology: true,
-// })
+
+
 // Wrap the await in an async function
+// Insert predefined categories into the database
 const createCategories = async () => {
   try {
-    await Category.create([
-      { name: 'Waste Issue', description: 'Waste disposal related issues.' },
-      { name: 'Electricity Issue', description: 'Issues related to electricity.' },
-      { name: 'Water Issue', description: 'Issues related to water supply.' },
-      { name: 'Road Issue', description: 'Issues related to roads.' },
-      { name: 'Theft/Violence', description: 'Cases of theft and violence.' }
-    ]);
-    console.log("Categories inserted successfully!");
+    const predefinedCategories = [
+      { name: "Waste Issue", description: "Waste disposal related issues." },
+      { name: "Electricity Issue", description: "Issues related to electricity." },
+      { name: "Water Issue", description: "Issues related to water supply." },
+      { name: "Road Issue", description: "Issues related to roads." },
+      { name: "Theft/Violence", description: "Cases of theft and violence." },
+    ];
+
+    const existingCategories = await Category.find({});
+
+    if (existingCategories.length === 0) {
+      await Category.insertMany(predefinedCategories);
+      console.log("Categories inserted successfully!");
+    } else {
+      console.log("Categories already exist.");
+    }
   } catch (error) {
     console.error("Error inserting categories:", error);
   }
 };
 
-// Call the async function
+// Call the async function to insert predefined categories
 createCategories();
-
 
 
 
@@ -555,32 +594,245 @@ createCategories();
 // POST route to add category
 app.post("/admin/add-category", async (req, res) => {
   if (!req.session.user || req.session.user.role !== "admin") {
-      return res.redirect("/login");
+    return res.redirect("/login");
   }
 
   const { name, description } = req.body;
 
   try {
-      // Save the category to the database
-      const newCategory = new Category({
-          name: name,
-          description: description
-      });
+    // Check if the category already exists
+    const existingCategory = await Category.findOne({ name });
+    if (existingCategory) {
+      return res.json({ success: false, message: "Category already exists!" });
+    }
 
-      await newCategory.save();
+    // Create and save a new category
+    const newCategory = new Category({ name, description });
+    await newCategory.save();
 
-      // Respond with success
-      res.json({ success: true });
+    res.json({ success: true });
   } catch (error) {
-      console.error("Error adding category:", error);
-      res.json({ success: false });
+    console.error("Error adding category:", error);
+    res.json({ success: false, message: "Failed to add category." });
+  }
+});
+
+// Route to fetch and display all categories (Admin view)
+app.get("/admin/add-category", async (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.redirect("/login");
+  }
+
+  try {
+    const categories = await Category.find({});
+    res.render("add-category", { categories }); // Ensure "add-category.ejs" exists in your views directory
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    res.status(500).send("Error loading page.");
   }
 });
 
 
+//Edit a Category:
+app.put("/admin/edit-category/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
 
+    const updatedCategory = await Category.findByIdAndUpdate(
+      id,
+      { name, description },
+      { new: true }
+    );
+
+    if (updatedCategory) {
+      res.json({ success: true });
+    } else {
+      res.json({ success: false, message: "Category not found." });
+    }
+  } catch (error) {
+    console.error("Error editing category:", error);
+    res.json({ success: false, message: "Failed to edit category." });
+  }
+});
+
+//Delete a Category:
+// Route to delete an existing category (Admin only)
+app.delete("/admin/delete-category/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedCategory = await Category.findByIdAndDelete(id);
+    if (deletedCategory) {
+      res.json({ success: true });
+    } else {
+      res.json({ success: false, message: "Category not found." });
+    }
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    res.json({ success: false, message: "Failed to delete category." });
+  }
+});
+
+
+//manageuser
+app.get("/admin/manage-users", async (req, res) => {
+  try {
+      // Fetch only the required fields from the database
+      const users = await User.find({}, "first_name last_name contact_no email role");
+      res.render("manage-users", { users }); // Use the correct file name
+  } catch (err) {
+      console.error("Error fetching users:", err);
+      res.status(500).send("Server Error");
+  }
+});
+
+// Delete a User by ID
+app.delete("/admin/delete-user/:id", async (req, res) => {
+  try {
+      const userId = req.params.id;
+      await User.findByIdAndDelete(userId); // Delete user by ID
+      res.json({ success: true });
+  } catch (err) {
+      console.error("Error deleting user:", err);
+      res.json({ success: false });
+  }
+});
 
 //routes
+// Fetch User Details
+app.get("/admin/user-details/:id", async (req, res) => {
+  try {
+      const user = await User.findById(req.params.id);
+      res.json({
+          id: user._id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          contact_no: user.contact_no,
+          email: user.email,
+          role: user.role,
+      });
+  } catch (err) {
+      console.error("Error fetching user details:", err);
+      res.status(500).send("Server Error");
+  }
+});
+
+// Update User Role
+app.post("/admin/update-role/:id", async (req, res) => {
+  try {
+      const { role } = req.body;
+      const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true });
+      res.json({ success: true });
+  } catch (err) {
+      console.error("Error updating user role:", err);
+      res.json({ success: false });
+  }
+});
+
+// Fetch Complaints for a User
+app.get("/admin/user-complaints/:id", async (req, res) => {
+  try {
+      // Assuming complaints are stored in a "Complaint" collection and associated with the user
+      const complaints = await Complaint.find({ userId: req.params.id });  // Adjust based on how complaints are linked to users
+
+      // Extract relevant data and send as response
+      const complaintData = complaints.map(c => ({
+          complaintNumber: c.complaintNumber,
+          category: c.category,
+          description: c.description,
+          location: c.location,
+          file: c.file,
+          regDate: c.regDate.toISOString() // Format date if necessary
+      }));
+
+      res.json({ complaints: complaintData });
+  } catch (err) {
+      console.error("Error fetching complaints:", err);
+      res.status(500).send("Server Error");
+  }
+});
+
+// Route to manage all complaints page
+// Route to manage all complaints page
+app.get('/admin/all-complaints', async (req, res) => {
+  try {
+      const complaints = await Complaint.find(); // Fetch all complaints from DB
+
+      // Convert regDate to Date object
+      complaints.forEach(complaint => {
+          if (complaint.regDate && typeof complaint.regDate === 'string') {
+              complaint.regDate = new Date(complaint.regDate); // Convert the string to Date
+          }
+      });
+
+      res.render('all-complaints', { complaints }); // Render the all-complaint.ejs page
+  } catch (error) {
+      console.error(error);
+      res.status(500).send('Error fetching complaints');
+  }
+});// Update complaint status
+app.post('/admin/update-complaint-status/:id', async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    try {
+        // Update complaint status in the database
+        await Complaint.findByIdAndUpdate(id, { status });
+
+        res.json({ message: 'Status updated successfully' });
+    } catch (error) {
+        console.error("Error updating complaint status:", error);
+        res.status(500).json({ message: 'Failed to update status' });
+    }
+});
+
+// Delete complaint
+app.delete('/admin/delete-complaint/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Delete the complaint from the database
+        await Complaint.findByIdAndDelete(id);
+
+        res.json({ message: 'Complaint deleted successfully' });
+    } catch (error) {
+        console.error("Error deleting complaint:", error);
+        res.status(500).json({ message: 'Failed to delete complaint' });
+    }
+});
+
+// Route for "Not Processed Complaints"
+app.get('/admin/not-processed', async (req, res) => {
+  try {
+      const complaints = await Complaint.find({ status: "Not Processed Yet" });
+      res.render('not-processed', { complaints });
+  } catch (error) {
+      console.error("Error fetching complaints:", error);
+      res.status(500).send('Failed to load complaints');
+  }
+});
+
+// Route to show "In Process" complaints
+app.get('/admin/in-process', async (req, res) => {
+  try {
+      const complaints = await Complaint.find({ status: 'In Process' });
+      res.render('in-process', { complaints });
+  } catch (error) {
+      console.error("Error fetching complaints:", error);
+      res.status(500).send('Error fetching complaints');
+  }
+});
+// Route to show "Closed Complaints"
+app.get('/admin/closed-complaints', async (req, res) => {
+  try {
+      const complaints = await Complaint.find({ status: 'Closed Complaint' });
+      res.render('closed-complaints', { complaints });
+  } catch (error) {
+      console.error("Error fetching complaints:", error);
+      res.status(500).send('Error fetching complaints');
+  }
+});
 
 
 app.get("/admin/complaint-history", (req, res) => {

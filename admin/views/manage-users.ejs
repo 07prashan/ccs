@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/admin/public/css/manageUser.css">
+    <script src="/admin/public/js/manageUser.js" defer></script>
+</head>
+<body>
+    <header>
+        <h1 class="main-title">Capital Complaint System</h1>
+    </header>
+
+   <!-- Navbar -->
+  <div class="navbar">
+    <nav>
+        <a href="/admin/home">Home</a>
+
+        <!-- Admin Management Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">Admin Management</button>
+            <div class="dropdown-content">
+                <a href="/admin/dashboard.ejs">Dashboard</a>
+                <a href="/admin/add-category">Add Category</a>
+                <a href="/admin/manage-users">Manage Users</a>
+            </div>
+        </div>
+
+        <!-- User Complaints Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">User Complaints</button>
+            <div class="dropdown-content">
+                <a href="/admin/all-complaints">All Complaints</a>
+                <a href="/admin/not-processed">Not Processed Yet</a>
+                <a href="/admin/in-process">In Process</a>
+                <a href="/admin/closed-complaints">Closed Complaints</a>
+            </div>
+        </div>
+
+        <!-- Reports Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">Reports</button>
+            <div class="dropdown-content">
+                <a href="/admin/user-reports">Users Report</a>
+                <a href="/admin/complaints-report">Complaints Report</a>
+            </div>
+        </div>
+
+        <!-- Search Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">Search</button>
+            <div class="dropdown-content">
+                <a href="/admin/search-user">User Search</a>
+                <a href="/admin/search-complaints">Search Complaints</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="profile-container">
+        <div class="dropdown">
+            <button class="dropbtn">Profile</button>
+            <div class="dropdown-content">
+                <a href="/settings">Settings</a>
+                <a href="#help">Help</a>
+                <a href="/logout">Logout</a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Main Content -->
+<div class="container mt-4">
+    <h1 class="text-center">Manage User</h1>
+    <h4 class="mt-4">View and Update Users Details</h4>
+    <div class="table-responsive mt-4">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Contact No</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Reg. Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% users.forEach((user, index) => { %>
+                    <tr id="user-<%= user.id %>">
+                        <td><%= index + 1 %></td>
+                        <td><%= user.first_name %></td>
+                        <td><%= user.last_name %></td>
+                        <td><%= user.contact_no %></td>
+                        <td><%= user.email %></td>
+                        <td><%= user.role %></td>
+                        <td><%= user.regDate %></td>
+                        <td>
+                            <button class="btn btn-success btn-sm view-details" data-id="<%= user.id %>">View Details</button>
+                            <button class="btn btn-danger btn-sm delete-user" data-id="<%= user.id %>">Delete</button>
+                            <button class="btn btn-primary btn-sm complaints" data-id="<%= user.id %>">Complaints</button>
+                        </td>
+                    </tr>
+                    <!-- User details row (hidden initially) -->
+                    <tr id="details-row-<%= user.id %>" class="user-details" style="display: none;">
+                        <td colspan="8">
+                            <div>
+                                <h5>User Details</h5>
+                                <p><strong>First Name:</strong> <span id="first_name_<%= user.id %>"><%= user.first_name %></span></p>
+                                <p><strong>Last Name:</strong> <span id="last_name_<%= user.id %>"><%= user.last_name %></span></p>
+                                <p><strong>Contact No:</strong> <span id="contact_no_<%= user.id %>"><%= user.contact_no %></span></p>
+                                <p><strong>Email:</strong> <span id="email_<%= user.id %>"><%= user.email %></span></p>
+                                <p><strong>Role:</strong> <select class="form-control role-dropdown" id="role_<%= user.id %>">
+                                    <option value="user" <%= user.role === 'user' ? 'selected' : '' %>>User</option>
+                                    <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                                    <option value="administrative" <%= user.role === 'administrative' ? 'selected' : '' %>>Administrative</option>
+                                </select></p>
+                                <button class="btn btn-primary btn-sm update-role" data-id="<%= user.id %>">Update Role</button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Complaints row (hidden initially) -->
+                    <tr id="complaints-row-<%= user.id %>" class="user-complaints" style="display: none;">
+                        <td colspan="8">
+                            <div id="complaints-content-<%= user.id %>">
+                                <!-- Complaints will be loaded here -->
+                            </div>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script></body>
+</html>
