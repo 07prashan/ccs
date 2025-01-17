@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Admin Dashboard</title>
     <link rel="stylesheet" href="/admin/public/css/dashboard.css">
     <script src="/admin/public/js/dashboard.js" defer></script>
 </head>
@@ -75,37 +75,37 @@
         <div class="stats-grid">
             <!-- Total Users -->
             <div class="stat-card total-users">
-                <h3 id="total-users">0</h3>
+                <h3><%= stats.totalUsers %></h3>
                 <p>Total Users</p>
             </div>
-
+        
             <!-- Total Categories -->
             <div class="stat-card total-categories">
-                <h3 id="total-categories">0</h3>
+                <h3><%= stats.totalCategories %></h3>
                 <p>Total Categories</p>
             </div>
-
+        
             <!-- Total Complaints -->
             <div class="stat-card total-complaints">
-                <h3 id="total-complaints">0</h3>
+                <h3><%= stats.totalComplaints %></h3>
                 <p>Total Complaints</p>
             </div>
-
+        
             <!-- Pending Complaints -->
             <div class="stat-card pending-complaints">
-                <h3 id="pending-complaints">0</h3>
+                <h3><%= stats.pendingComplaints %></h3>
                 <p>Pending Complaints</p>
             </div>
-
+        
             <!-- In Process Complaints -->
             <div class="stat-card in-process-complaints">
-                <h3 id="in-process-complaints">0</h3>
+                <h3><%= stats.inProcessComplaints %></h3>
                 <p>In Process</p>
             </div>
-
+        
             <!-- Closed Complaints -->
             <div class="stat-card closed-complaints">
-                <h3 id="closed-complaints">0</h3>
+                <h3><%= stats.closedComplaints %></h3>
                 <p>Closed Complaints</p>
             </div>
         </div>

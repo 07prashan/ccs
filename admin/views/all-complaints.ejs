@@ -6,7 +6,6 @@
   <title>Capital Complaint System</title>
   <link rel="stylesheet" href="/admin/public/css/all-complaints.css">
   <script src="/admin/public/js/all-complaints.js" defer></script>
-  
 </head>
 <body>
 
@@ -79,11 +78,13 @@
         <thead>
             <tr>
                 <th>Complaint Number</th>
+                <th>Complainant Name</th> <!-- Updated header for complainant name -->
                 <th>Category</th>
                 <th>Description</th>
                 <th>Location</th>
                 <th>File</th>
                 <th>Reg Date</th>
+                <th>Status</th> <!-- New column for Status -->
                 <th>Action</th>
             </tr>
         </thead>
@@ -91,6 +92,13 @@
             <% complaints.forEach(complaint => { %>
                 <tr>
                     <td><%= complaint.complaintNumber %></td>
+                    <td>
+                        <% if (complaint.userId) { %>
+                            <%= complaint.userId.first_name + ' ' + complaint.userId.last_name %> <!-- Show complainant's full name -->
+                        <% } else { %>
+                            No Complainant
+                        <% } %>
+                    </td>
                     <td><%= complaint.category %></td>
                     <td><%= complaint.description %></td>
                     <td><%= complaint.location %></td>
@@ -101,8 +109,9 @@
                             No File
                         <% } %>
                     </td>
-                    <td><%= new Date(complaint.regDate).toDateString() %></td>
-                    <td>
+                     <td><%= new Date(complaint.regDate).toDateString() %></td>
+                     <td><%= complaint.status %></td> <!-- Displaying Complaint Status -->
+                     <td>
                         <button class="manage-btn" data-id="<%= complaint._id %>">
                             Manage Complaint
                         </button>

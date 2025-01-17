@@ -126,7 +126,9 @@ body {
 
 .stat-card p {
     margin: 5px 0 0;
-    color: #777;
+    color: black;
+    font-weight: bolder;
+    font-size: large;
 }
 
 /* Colors for Specific Cards */

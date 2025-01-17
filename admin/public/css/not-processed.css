@@ -133,7 +133,7 @@ body {
 }
 
 .complaints-table th {
-    background-color: #c9cdd2;
+    background-color: #007bff;
     color: black;
     font-weight: bold;
 }
@@ -157,7 +157,7 @@ body {
 
 /* Manage Complaint Button */
 .manage-btn {
-    background-color: #007bff;
+    background-color: #28a745;
     color: white;
     padding: 8px 12px;
     border: none;
@@ -167,7 +167,7 @@ body {
 }
 
 .manage-btn:hover {
-    background-color: #0056b3;
+    background-color: #218838;
 }
 
 /* Modal Styles */

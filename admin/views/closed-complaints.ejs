@@ -80,28 +80,49 @@
             <thead>
                 <tr>
                     <th>Complaint Number</th>
+                <th>Complainant Name</th> <!-- Updated header for complainant name -->
+
                     <th>Category</th>
                     <th>Description</th>
                     <th>Location</th>
-                    <th>Status</th>
+                    <th>File</th>
+                    <th>Registration Date</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <% complaints.forEach(function(complaint) { %>
-                    <% if (complaint.status === 'Closed Complaint') { %>
-                        <tr>
+                <% if (complaints.length === 0) { %>
+                    <tr>
+                        <td colspan="7" style="text-align: center;">No complaints found.</td>
+                    </tr>
+                <% } else { %>
+                    <% complaints.forEach(complaint => { %>
+                        <tr id="complaint-<%= complaint._id %>">
                             <td><%= complaint.complaintNumber %></td>
-                            <td><%= complaint.category %></td>
-                            <td><%= complaint.description %></td>
-                            <td><%= complaint.location %></td>
-                            <td><%= new Date(complaint.regDate).toLocaleDateString() %></td>
+                    <td>
+                        <% if (complaint.userId) { %>
+                            <%= complaint.userId.first_name + ' ' + complaint.userId.last_name %> <!-- Show complainant's full name -->
+                        <% } else { %>
+                            No Complainant
+                        <% } %>
+                    </td>
+                    <td><%= complaint.category %></td>
+                    <td><%= complaint.description %></td>
+                    <td><%= complaint.location %></td>
+                    <td>
+                        <% if (complaint.file) { %>
+                            <a href="/uploads/<%= complaint.file %>" target="_blank">View File</a>
+                        <% } else { %>
+                            No File
+                        <% } %>
+                    </td>
+                            <td><%= new Date(complaint.regDate).toLocaleString() %></td>
                             <td>
                                 <button class="manage-btn" onclick="openManageModal('<%= complaint._id %>')">Manage Complaint</button>
                             </td>
                         </tr>
-                    <% } %>
-                <% }) %>
+                    <% }); %>
+                <% } %>
             </tbody>
         </table>
     </div>

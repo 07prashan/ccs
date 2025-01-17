@@ -6,7 +6,6 @@ body {
     color: #333;
 }
 
-
 /* Title Styling */
 .main-title {
     text-align: center;
@@ -16,8 +15,6 @@ body {
     color: #1a73e8;
 }
 
-
-/* Navbar Styling */
 /* Navbar Styling */
 .navbar {
     display: flex;
@@ -25,7 +22,9 @@ body {
     justify-content: space-between;
     background-color: #1a73e8;
     padding: 10px 20px;
+    flex-wrap: wrap;
 }
+
 .navbar a {
     text-decoration: none;
     color: white;
@@ -33,11 +32,13 @@ body {
     font-size: 1.2em;
     border-radius: 5px;
     transition: background-color 0.3s;
+    margin: 5px 0;
 }
 
 .navbar a:hover {
     background-color: #105cb6;
 }
+
 /* Dropdown Container */
 .dropdown {
     position: relative;
@@ -99,8 +100,9 @@ body {
     transition: background-color 0.2s;
 }
 
+/* Container */
 .container {
-    width: 90%;
+    width: 100%;
     max-width: 1200px;
     margin: 20px auto;
     background: #fff;
@@ -109,6 +111,7 @@ body {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+/* Heading */
 h1 {
     text-align: center;
     margin-bottom: 20px;
@@ -237,7 +240,6 @@ h1 {
     background-color: #c82333 !important; /* Darker red on hover */
 }
 
-
 /* Cancel Button */
 .close-modal {
     background-color: #fff; /* White background */
@@ -255,15 +257,51 @@ h1 {
     background-color: #f1f1f1; /* Light gray on hover */
     color: #000;
 }
+
 /* Responsive Design */
 @media (max-width: 768px) {
+    /* Navbar */
+    .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .navbar a {
+        padding: 8px 12px;
+        font-size: 1em;
+        margin: 5px 0;
+    }
+
+    .dropdown-content {
+        position: static;
+        width: 100%;
+    }
+
+    /* Table */
     .complaints-table th,
     .complaints-table td {
         font-size: 12px;
         padding: 8px;
     }
 
+    .complaints-table {
+        font-size: 14px;
+    }
+
+    /* Modal */
     .modal-content {
-        width: 90%;
+        width: 80%;
+        max-width: 90%;
+    }
+
+    /* Manage Button */
+    .manage-btn {
+        padding: 6px 10px;
+        font-size: 0.9em;
+    }
+
+    /* Profile dropdown button */
+    .profile-container .dropbtn {
+        padding: 8px 12px;
+        font-size: 0.9em;
     }
 }

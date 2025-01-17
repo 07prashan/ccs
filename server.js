@@ -43,6 +43,16 @@ function checkAdminOrDeveloper(req, res, next) {
   }
   next();
 }
+// Middleware to check the user's role
+function checkRole(role) {
+  return (req, res, next) => {
+    if (!req.session.user || req.session.user.role !== role) {
+      return res.redirect("/login");
+    }
+    next();
+  };
+}
+
 // Session Middleware
 app.use(
   session({
@@ -80,12 +90,13 @@ const User = mongoose.model("User", userSchema); // Compile the user model
 const complaintSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Reference to User model
   complaintNumber: { type: String, required: true },
+  ComplainantName: {type: String, required: true },
   category: { type: String, required: true },
   description: { type: String, required: true },
   location: { type: String, required: true },
   file: { type: String },
   regDate: { type: Date, default: Date.now },
-  status: { type: String, default: null },
+  status: { type: String, enum: ["Not Processed Yet", "In Process", "Closed Complaint"], default: "Not Processed Yet" } // Add the status field
 });
 
 const Complaint = mongoose.model("Complaint", complaintSchema); // Compile the complaint model
@@ -175,17 +186,20 @@ app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    // Find the user based on the provided email
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(401).send("Invalid credentials.");
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Compare the entered password with the hashed password stored in the database
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).send("Invalid credentials.");
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Store the relevant user information in the session
     req.session.user = {
       id: user._id,
       first_name: user.first_name,
@@ -204,9 +218,10 @@ app.post("/login", async (req, res) => {
     }
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).send("Error logging in.");
+    res.status(500).json({ message: "Error logging in", error: err.message });
   }
 });
+
 
 // User Home Page
 app.get("/home", (req, res) => {
@@ -238,6 +253,29 @@ app.get("/administration/home", (req, res) => {
   });
 });
 
+//dashboard root user/ admin
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+
+    if (user && user.password === password) {
+      req.session.user = user; // Save user session
+
+      // Redirect based on role
+      if (user.role === "admin") {
+        return res.redirect("/admin/dashboard");
+      } else if (user.role === "user") {
+        return res.redirect("/user/dashboard");
+      }
+    } else {
+      res.status(401).send("Invalid credentials");
+    }
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).send("Server error");
+  }
+});
 
 
 // Logout route
@@ -249,29 +287,6 @@ app.get("/logout", (req, res) => {
     res.redirect("/login");
   });
 });
-
-
-// Post a complaint page
-// app.get("/post-complaint", (req, res) => {
-//   if (req.session.user) {
-//     res.render("post-complaint");
-//   } else {
-//     res.redirect("/login");
-//   }
-// });
-
-// Route to fetch categories for the user (for "post-complaint.ejs")
-// app.get("/user/post-complaint", async (req, res) => {
-//   try {
-//     // Fetch all categories from the database
-//     const categories = await Category.find({});
-//     // Pass categories to the view
-//     res.render("post-complaint", { categories }); 
-//   } catch (error) {
-//     console.error("Error fetching categories for user view:", error);
-//     res.status(500).send("Error loading page.");
-//   }
-// });
 
 app.get("/post-complaint", async (req, res) => {
   if (!req.session.user) {
@@ -287,9 +302,6 @@ app.get("/post-complaint", async (req, res) => {
   }
 });
 
-
-
-// Submit a complaint
 app.post(
   "/submit-complaint",
   upload.single("file"),
@@ -307,33 +319,40 @@ app.post(
 
     try {
       const { category, description, location } = req.body;
-      const userId = req.session.user?.id;
-
-      if (!userId) {
+      const userSession = req.session.user;
+      
+      if (!userSession) {
         return res.status(401).json({ success: false, message: "Unauthorized" });
       }
 
+      const ComplainantName = `${userSession.first_name} ${userSession.last_name}`;
       const complaintCount = await Complaint.countDocuments();
       const complaintNumber = `CMP${complaintCount + 1}`;
 
       const newComplaint = new Complaint({
-        userId: req.session.user.id,
+        userId: userSession.id,
         complaintNumber,
+        ComplainantName,
         category,
         description,
         location,
         file: req.file ? req.file.filename : null,
         regDate: new Date(),
-        status: null,
+        status: "Not Processed Yet"
       });
 
       await newComplaint.save();
-      // Instead of redirect, you can send a JSON response
-      // res.json({ success: true, complaintNumber: newComplaint.complaintNumber });
-      res.redirect("/complaint-history");
+      
+      // Return success JSON response instead of redirecting
+      return res.status(200).json({
+        success: true,
+        message: "Complaint submitted successfully",
+        complaint: newComplaint
+      });
+
     } catch (error) {
       console.error("Error submitting complaint:", error);
-      res.status(500).json({ 
+      return res.status(500).json({ 
         success: false, 
         message: "Error submitting complaint",
         error: error.message 
@@ -341,6 +360,7 @@ app.post(
     }
   }
 );
+
 
 // Complaint history
 app.get("/complaint-history", async (req, res) => {
@@ -359,7 +379,6 @@ app.get("/complaint-history", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
-
 // Dashboard route
 app.get("/dashboard", (req, res) => {
   if (!req.session.user) {
@@ -367,6 +386,12 @@ app.get("/dashboard", (req, res) => {
   }
   res.render("dashboard", { user: req.session.user });
 });
+// //
+// app.get("/user/dashboard", checkRole("user"), (req, res) => {
+//   // Render the user dashboard view
+//   res.render("user/dashboard", { user: req.session.user });
+// });
+
 
 // API for dashboard stats
 app.get("/api/dashboard-stats", async (req, res) => {
@@ -378,18 +403,24 @@ app.get("/api/dashboard-stats", async (req, res) => {
 
   try {
     const total = await Complaint.countDocuments({ userId });
+
     const pending = await Complaint.countDocuments({
       userId,
-      status: null,
+      status: { $in: [null, undefined, "Not Processed Yet"] }, // Updated for null, undefined, and exact string match
     });
+
     const inProcess = await Complaint.countDocuments({
       userId,
-      status: "in process",
+      status: { $regex: /^in process$/i }, // Case-insensitive regex
     });
+
     const closed = await Complaint.countDocuments({
       userId,
-      status: "closed",
+      status: { $regex: /^closed complaint$/i }, // Case-insensitive regex
     });
+
+    // Log the statistics
+    // console.log("Dashboard Stats:", { total, pending, inProcess, closed });
 
     res.json({ total, pending, inProcess, closed });
   } catch (err) {
@@ -397,6 +428,9 @@ app.get("/api/dashboard-stats", async (req, res) => {
     res.status(500).json({ error: "Server Error" });
   }
 });
+
+
+
 
 // Route for displaying full complaint details
 app.get("/complaint-details/:id", async (req, res) => {
@@ -516,7 +550,18 @@ app.get("/admin", (req, res) => {
 });
 
 
-
+//to check all unique statuses
+app.get("/debug-statuses", async (req, res) => {
+  try {
+      const uniqueStatuses = await Complaint.distinct('status');
+      console.log('All unique statuses in database:', uniqueStatuses);
+      res.json(uniqueStatuses);
+  } catch (err) {
+      console.error(err);
+      res.status(500).send('Error checking statuses');
+  }
+});
+// Admin Dashboard Route
 // Admin Dashboard Route
 app.get("/admin/dashboard", async (req, res) => {
   // Log session user for debugging
@@ -524,39 +569,87 @@ app.get("/admin/dashboard", async (req, res) => {
 
   // Check if the user is logged in and has admin role
   if (!req.session.user || req.session.user.role !== "admin") {
-      return res.redirect("/login");
+    return res.redirect("/login");
   }
-  
+
   try {
-      // Fetch stats for admin
-      const totalUsers = await User.countDocuments();
-      const totalCategories = await Category.countDocuments(); // Assuming a `Category` model
-      const totalComplaints = await Complaint.countDocuments();
-      const pendingComplaints = await Complaint.countDocuments({ status: "pending" });
-      const inProcessComplaints = await Complaint.countDocuments({ status: "in-process" });
-      const closedComplaints = await Complaint.countDocuments({ status: "closed" });
-//  // Log values to debug
-//  console.log('Total Users:', totalUsers);
-//  console.log('Total Categories:', totalCategories);
-//  console.log('Total Complaints:', totalComplaints);
-      // Render admin's dashboard
-      res.render(path.join(__dirname, "admin", "views", "dashboard"), {
-          admin: req.session.user,
-          stats: {
-              totalUsers,
-              totalCategories,
-              totalComplaints,
-              pendingComplaints,
-              inProcessComplaints,
-              closedComplaints,
-          },
-      });
+    // Fetch all stats from the database
+    const totalUsers = await User.countDocuments({ role: "user" });
+    const totalCategories = await Category.countDocuments();
+    const totalComplaints = await Complaint.countDocuments();
+    const pendingComplaints = await Complaint.countDocuments({ status: "Not Processed Yet" });
+    const inProcessComplaints = await Complaint.countDocuments({ status: "In Process" });
+    const closedComplaints = await Complaint.countDocuments({ status: "Closed Complaint" });
+
+    // Log the stats to ensure they are being fetched correctly
+    // console.log('Total Users:', totalUsers);
+    // console.log('Total Categories:', totalCategories);
+    // console.log('Total Complaints:', totalComplaints);
+    // console.log('Pending Complaints:', pendingComplaints);
+    // console.log('In Process Complaints:', inProcessComplaints);
+    // console.log('Closed Complaints:', closedComplaints);
+
+    // Render the admin dashboard with the fetched stats
+    res.render(path.join(__dirname, "admin", "views", "dashboard"), {
+      admin: req.session.user,
+      stats: {
+        totalUsers,
+        totalCategories,
+        totalComplaints,
+        pendingComplaints,
+        inProcessComplaints,
+        closedComplaints,
+      }
+    });
   } catch (err) {
-      console.error("Error loading admin dashboard:", err);
-      res.status(500).send("Error loading dashboard.");
+    console.error("Error loading admin dashboard:", err);
+    res.status(500).send("Error loading dashboard.");
   }
 });
 
+// API for dashboard stats
+app.get("/api/dashboard-stats", async (req, res) => {
+  if (!req.session.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+      // Check counts directly for each status
+      const pendingComplaints = await Complaint.countDocuments({
+          status: "Not Processed Yet"
+      });
+      console.log('Pending Complaints:', pendingComplaints);
+
+      const inProcessComplaints = await Complaint.countDocuments({
+          status: "In Process"
+      });
+      console.log('In Process Complaints:', inProcessComplaints);
+
+      const closedComplaints = await Complaint.countDocuments({
+          status: "Closed Complaint"
+      });
+      console.log('Closed Complaints:', closedComplaints);
+
+      // Fetch other stats (total users, total categories)
+      const totalUsers = await User.countDocuments({ role: "user" });
+      console.log('Total Users:', totalUsers);
+      
+      const totalCategories = await Category.countDocuments();
+      console.log('Total Categories:', totalCategories);
+
+      // Return the stats as JSON response
+      res.json({
+          totalUsers,
+          totalCategories,
+          pendingComplaints,
+          inProcessComplaints,
+          closedComplaints,
+      });
+  } catch (err) {
+      console.error("Error fetching complaint stats:", err);
+      res.status(500).json({ error: "Server Error" });
+  }
+});
 
 
 
@@ -729,16 +822,17 @@ app.post("/admin/update-role/:id", async (req, res) => {
       res.json({ success: false });
   }
 });
-
 // Fetch Complaints for a User
 app.get("/admin/user-complaints/:id", async (req, res) => {
   try {
-      // Assuming complaints are stored in a "Complaint" collection and associated with the user
-      const complaints = await Complaint.find({ userId: req.params.id });  // Adjust based on how complaints are linked to users
+      // Fetch complaints and populate userId to get first_name and last_name
+      const complaints = await Complaint.find({ userId: req.params.id })
+        .populate('userId', 'first_name last_name'); // Populate the user's first_name and last_name
 
-      // Extract relevant data and send as response
+      // Extract relevant data and add complainantName field
       const complaintData = complaints.map(c => ({
           complaintNumber: c.complaintNumber,
+          complainantName: `${c.userId.first_name} ${c.userId.last_name}`, // Construct the complainant's full name
           category: c.category,
           description: c.description,
           location: c.location,
@@ -754,24 +848,28 @@ app.get("/admin/user-complaints/:id", async (req, res) => {
 });
 
 // Route to manage all complaints page
-// Route to manage all complaints page
 app.get('/admin/all-complaints', async (req, res) => {
   try {
-      const complaints = await Complaint.find(); // Fetch all complaints from DB
+    // Fetch all complaints and populate the userId to get complainant name
+    const complaints = await Complaint.find()
+      .populate('userId', 'first_name last_name'); // Populate userId with first_name and last_name
 
-      // Convert regDate to Date object
-      complaints.forEach(complaint => {
-          if (complaint.regDate && typeof complaint.regDate === 'string') {
-              complaint.regDate = new Date(complaint.regDate); // Convert the string to Date
-          }
-      });
+    // Convert regDate to Date object and add complainant name
+    complaints.forEach(complaint => {
+      if (complaint.regDate && typeof complaint.regDate === 'string') {
+        complaint.regDate = new Date(complaint.regDate); // Convert the string to Date
+      }
+    });
 
-      res.render('all-complaints', { complaints }); // Render the all-complaint.ejs page
+    // Render the data to the view
+    res.render('all-complaints', { complaints });
   } catch (error) {
-      console.error(error);
-      res.status(500).send('Error fetching complaints');
+    console.error(error);
+    res.status(500).send('Error fetching complaints');
   }
-});// Update complaint status
+});
+
+// Update complaint status
 app.post('/admin/update-complaint-status/:id', async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
@@ -801,38 +899,51 @@ app.delete('/admin/delete-complaint/:id', async (req, res) => {
         res.status(500).json({ message: 'Failed to delete complaint' });
     }
 });
-
 // Route for "Not Processed Complaints"
 app.get('/admin/not-processed', async (req, res) => {
   try {
-      const complaints = await Complaint.find({ status: "Not Processed Yet" });
-      res.render('not-processed', { complaints });
+    // Fetch complaints with "Not Processed Yet" status and populate userId to get complainant name
+    const complaints = await Complaint.find({ status: "Not Processed Yet" })
+      .populate('userId', 'first_name last_name'); // Populate userId with first_name and last_name
+    
+    // Render the 'not-processed' page with the complaints data
+    res.render('not-processed', { complaints });
   } catch (error) {
-      console.error("Error fetching complaints:", error);
-      res.status(500).send('Failed to load complaints');
+    console.error("Error fetching complaints:", error);
+    res.status(500).send('Failed to load complaints');
   }
 });
 
 // Route to show "In Process" complaints
 app.get('/admin/in-process', async (req, res) => {
   try {
-      const complaints = await Complaint.find({ status: 'In Process' });
-      res.render('in-process', { complaints });
+    // Fetch complaints with "In Process" status and populate userId to get complainant name
+    const complaints = await Complaint.find({ status: 'In Process' })
+      .populate('userId', 'first_name last_name'); // Populate userId with first_name and last_name
+    
+    // Render the 'in-process' page with the complaints data
+    res.render('in-process', { complaints });
   } catch (error) {
-      console.error("Error fetching complaints:", error);
-      res.status(500).send('Error fetching complaints');
+    console.error("Error fetching complaints:", error);
+    res.status(500).send('Error fetching complaints');
   }
 });
+
 // Route to show "Closed Complaints"
 app.get('/admin/closed-complaints', async (req, res) => {
   try {
-      const complaints = await Complaint.find({ status: 'Closed Complaint' });
-      res.render('closed-complaints', { complaints });
+    // Fetch complaints with "Closed Complaint" status and populate userId to get complainant name
+    const complaints = await Complaint.find({ status: 'Closed Complaint' })
+      .populate('userId', 'first_name last_name'); // Populate userId with first_name and last_name
+    
+    // Render the 'closed-complaints' page with the complaints data
+    res.render('closed-complaints', { complaints });
   } catch (error) {
-      console.error("Error fetching complaints:", error);
-      res.status(500).send('Error fetching complaints');
+    console.error("Error fetching complaints:", error);
+    res.status(500).send('Error fetching complaints');
   }
 });
+
 
 
 app.get("/admin/complaint-history", (req, res) => {
