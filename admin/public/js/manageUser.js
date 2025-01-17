@@ -21,37 +21,34 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 });
-
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     // Open View Details
-    document.querySelectorAll('.view-details').forEach(button => {
-        button.addEventListener('click', function() {
-            const userId = this.dataset.id;
-            const detailsRow = document.getElementById(`details-row-${userId}`);
-            const complaintsRow = document.getElementById(`complaints-row-${userId}`);
-
-            // Toggle the user details row visibility
-            if (detailsRow.style.display === "none") {
-                // Fetch user details if not already shown
-                fetch(`/admin/user-details/${userId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        document.getElementById(`first_name_${userId}`).textContent = data.first_name;
-                        document.getElementById(`last_name_${userId}`).textContent = data.last_name;
-                        document.getElementById(`contact_no_${userId}`).textContent = data.contact_no;
-                        document.getElementById(`email_${userId}`).textContent = data.email;
-                        document.getElementById(`role_${userId}`).value = data.role;
-                    });
-
-                detailsRow.style.display = "table-row"; // Show the details
-            } else {
-                detailsRow.style.display = "none"; // Hide the details
-            }
-
-            // Also hide complaints if showing
-            complaintsRow.style.display = "none";
-        });
+    document.querySelectorAll(".view-details").forEach((button) => {
+      button.addEventListener("click", function () {
+        const userId = this.dataset.id;
+        const detailsRow = document.getElementById(`details-row-${userId}`);
+  
+        if (detailsRow.style.display === "none") {
+          // Fetch user details
+          fetch(`/admin/user-details/${userId}`)
+            .then((response) => response.json())
+            .then((data) => {
+              document.getElementById(`first_name_${userId}`).textContent = data.first_name;
+              document.getElementById(`last_name_${userId}`).textContent = data.last_name;
+              document.getElementById(`contact_no_${userId}`).textContent = data.contact_no;
+              document.getElementById(`email_${userId}`).textContent = data.email;
+              document.getElementById(`role_${userId}`).value = data.role;
+              document.getElementById(`reg_date_${userId}`).textContent = new Date(data.regDate).toLocaleDateString(); // Display registration date
+            });
+  
+          detailsRow.style.display = "table-row"; // Show the details
+        } else {
+          detailsRow.style.display = "none"; // Hide the details
+        }
+      });
     });
+  });
+  
 
     // Update User Role
     document.querySelectorAll('.update-role').forEach(button => {
@@ -110,4 +107,4 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     });
-});
+

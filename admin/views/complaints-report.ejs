@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Capital Complaint System</title>
-  <link rel="stylesheet" href="/admin/public/css/all-complaints.css">
-  <script src="/admin/public/js/all-complaints.js" defer></script>
+  <link rel="stylesheet" href="/admin/public/css/complaints-report.css">
+  <script src="/admin/public/js/complaints-report.js" defer></script>
+  
 </head>
 <body>
 
@@ -70,22 +71,29 @@
         </div>
     </div>
 </div>
+  <!-- Complaints Report Form -->
+  <div class="container">
+    <h1>Complaints Report</h1>
 
-<div class="container">
-    <h1>All Complaints</h1>
+    <form action="/admin/complaints-report" method="get">
+      <label for="startDate">Start Date:</label>
+      <input type="date" id="startDate" name="startDate" value="<%= startDate || '' %>">
+      <label for="endDate">End Date:</label>
+      <input type="date" id="endDate" name="endDate" value="<%= endDate || '' %>">
+      <button type="submit">Generate Report</button>
+    </form>
 
     <table class="complaints-table">
         <thead>
             <tr>
                 <th>Complaint Number</th>
-                <th>Complainant Name</th> <!-- Updated header for complainant name -->
+                <th>Complainant Name</th>
                 <th>Category</th>
                 <th>Description</th>
                 <th>Location</th>
                 <th>File</th>
                 <th>Reg Date</th>
-                <th>Status</th> <!-- New column for Status -->
-                <th>Action</th>
+                <th>Status</th>
             </tr>
         </thead>
         <tbody>
@@ -94,7 +102,7 @@
                     <td><%= complaint.complaintNumber %></td>
                     <td>
                         <% if (complaint.userId) { %>
-                            <%= complaint.userId.first_name + ' ' + complaint.userId.last_name %> <!-- Show complainant's full name -->
+                            <%= complaint.userId.first_name + ' ' + complaint.userId.last_name %>
                         <% } else { %>
                             No Complainant
                         <% } %>
@@ -110,40 +118,12 @@
                         <% } %>
                     </td>
                     <td><%= new Date(complaint.regDate).toDateString() %></td>
-                    <td><%= complaint.status %></td> <!-- Displaying Complaint Status -->
-                    <td>
-                        <button class="manage-btn" data-id="<%= complaint._id %>" data-status="<%= complaint.status %>">
-                            Manage Complaint
-                        </button>
-                    </td>
+                    <td><%= complaint.status %></td>
                 </tr>
             <% }); %>
         </tbody>
     </table>
-</div>
-
-<!-- Modal for Managing Complaint -->
-<div id="manage-modal" class="modal hidden">
-    <div class="modal-content">
-        <h2>Manage Complaint</h2>
-        <form id="manage-form">
-            <label for="status">Update Status:</label>
-            <select name="status" id="status">
-                <option value="Not Processed Yet">Not Processed Yet</option>
-                <option value="In Process">In Process</option>
-                <option value="Closed Complaint">Closed Complaint</option>
-            </select>
-            <input type="hidden" name="complaintId" id="complaintId">
-            <button type="submit">Update Status</button>
-        </form>
-        <hr>
-        <form id="delete-form">
-            <input type="hidden" name="deleteComplaintId" id="deleteComplaintId">
-            <button type="submit" class="delete-btn">Delete Complaint</button>
-        </form>
-        <button type="button" class="close-modal">Cancel</button>
-    </div>
-</div>
-
+    
+  </div>
 </body>
 </html>

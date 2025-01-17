@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capital Complaint System</title>
+  <link rel="stylesheet" href="/admin/public/css/search-user.css">
+  <script src="/admin/public/js/search-user.js" defer></script>
+  
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <h1 class="main-title">Capital Complaint System</h1>
+  </header>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <nav>
+        <a href="/admin/home">Home</a>
+
+        <!-- Admin Management Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">Admin Management</button>
+            <div class="dropdown-content">
+                <a href="/admin/dashboard">Dashboard</a>
+                <a href="/admin/add-category">Add Category</a>
+                <a href="/admin/manage-users">Manage Users</a>
+            </div>
+        </div>
+
+        <!-- User Complaints Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">User Complaints</button>
+            <div class="dropdown-content">
+                <a href="/admin/all-complaints">All Complaints</a>
+                <a href="/admin/not-processed">Not Processed Yet</a>
+                <a href="/admin/in-process">In Process</a>
+                <a href="/admin/closed-complaints">Closed Complaints</a>
+            </div>
+        </div>
+
+        <!-- Reports Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">Reports</button>
+            <div class="dropdown-content">
+                <a href="/admin/user-reports">Users Report</a>
+                <a href="/admin/complaints-report">Complaints Report</a>
+            </div>
+        </div>
+
+        <!-- Search Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">Search</button>
+            <div class="dropdown-content">
+                <a href="/admin/search-user">User Search</a>
+                <a href="/admin/search-complaints">Search Complaints</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="profile-container">
+        <div class="dropdown">
+            <button class="dropbtn">Profile</button>
+            <div class="dropdown-content">
+                <a href="/settings">Settings</a>
+                <a href="#help">Help</a>
+                <a href="/logout">Logout</a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Main Content -->
+<div class="container">
+    <h1 class="text-center">Search User</h1>
+
+    <!-- Search Section -->
+    <div class="search-section">
+      <form id="search-form" action="/admin/search-user" method="GET">
+        <label for="search-input">Search User</label>
+        <input type="text" id="search-input" name="searchQuery" placeholder="Search user by name, contact no, email" required>
+        <button type="submit">Search</button>
+      </form>
+    </div>
+
+    <!-- Display Results Section -->
+    <section id="search-results">
+      <% if (users && users.length > 0) { %>
+        <table class="user-reports-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Contact</th>
+              <th>Role</th>
+              <th>Registration Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% users.forEach(user => { %>
+              <tr>
+                <td><%= user.first_name %> <%= user.last_name %></td>
+                <td><%= user.email %></td>
+                <td><%= user.contact_no %></td>
+                <td><%= user.role %></td>
+                <td><%= new Date(user.regDate).toDateString() %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p>No users found matching your query.</p>
+      <% } %>
+    </section>
+  </div>
+</body>
+</html>

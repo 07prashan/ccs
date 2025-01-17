@@ -85,6 +85,9 @@ const userSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model("User", userSchema); // Compile the user model
+User.updateMany({ regDate: { $exists: false } }, { $set: { regDate: new Date() } })
+  .then(() => console.log('RegDate added to users without it'))
+  .catch(err => console.error('Error updating users:', err));
 
 // Complaint schema to handle user complaints
 const complaintSchema = new mongoose.Schema({
@@ -618,24 +621,24 @@ app.get("/api/dashboard-stats", async (req, res) => {
       const pendingComplaints = await Complaint.countDocuments({
           status: "Not Processed Yet"
       });
-      console.log('Pending Complaints:', pendingComplaints);
+      // console.log('Pending Complaints:', pendingComplaints);
 
       const inProcessComplaints = await Complaint.countDocuments({
           status: "In Process"
       });
-      console.log('In Process Complaints:', inProcessComplaints);
+      // console.log('In Process Complaints:', inProcessComplaints);
 
       const closedComplaints = await Complaint.countDocuments({
           status: "Closed Complaint"
       });
-      console.log('Closed Complaints:', closedComplaints);
+      // console.log('Closed Complaints:', closedComplaints);
 
       // Fetch other stats (total users, total categories)
       const totalUsers = await User.countDocuments({ role: "user" });
-      console.log('Total Users:', totalUsers);
+      // console.log('Total Users:', totalUsers);
       
       const totalCategories = await Category.countDocuments();
-      console.log('Total Categories:', totalCategories);
+      // console.log('Total Categories:', totalCategories);
 
       // Return the stats as JSON response
       res.json({
@@ -769,16 +772,26 @@ app.delete("/admin/delete-category/:id", async (req, res) => {
 
 
 //manageuser
-app.get("/admin/manage-users", async (req, res) => {
+app.get('/admin/manage-users', async (req, res) => {
   try {
-      // Fetch only the required fields from the database
-      const users = await User.find({}, "first_name last_name contact_no email role");
-      res.render("manage-users", { users }); // Use the correct file name
+    const users = await User.find({}); // Fetch all users
+    res.render('manage-users', {
+      users: users.map(user => ({
+        id: user._id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        contact_no: user.contact_no,
+        email: user.email,
+        role: user.role,
+        regDate: user.regDate ? new Date(user.regDate).toLocaleDateString() : 'N/A', // Format regDate
+      })),
+    });
   } catch (err) {
-      console.error("Error fetching users:", err);
-      res.status(500).send("Server Error");
+    console.error('Error fetching users:', err);
+    res.status(500).send('Server Error');
   }
 });
+
 
 // Delete a User by ID
 app.delete("/admin/delete-user/:id", async (req, res) => {
@@ -796,20 +809,22 @@ app.delete("/admin/delete-user/:id", async (req, res) => {
 // Fetch User Details
 app.get("/admin/user-details/:id", async (req, res) => {
   try {
-      const user = await User.findById(req.params.id);
-      res.json({
-          id: user._id,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          contact_no: user.contact_no,
-          email: user.email,
-          role: user.role,
-      });
+    const user = await User.findById(req.params.id);
+    res.json({
+      id: user._id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      contact_no: user.contact_no,
+      email: user.email,
+      role: user.role,
+      regDate: user.regDate, // Add this line to include registration date
+    });
   } catch (err) {
-      console.error("Error fetching user details:", err);
-      res.status(500).send("Server Error");
+    console.error("Error fetching user details:", err);
+    res.status(500).send("Server Error");
   }
 });
+
 
 // Update User Role
 app.post("/admin/update-role/:id", async (req, res) => {
@@ -944,15 +959,140 @@ app.get('/admin/closed-complaints', async (req, res) => {
   }
 });
 
+// User-reports page route
+app.get('/admin/user-reports', async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.query;
+    let users = [];
+    let message = null; // Initialize message as null to avoid undefined reference
 
+    // If no date range is provided, fetch all users
+    if (!fromDate || !toDate) {
+      users = await User.find({});
+    } else {
+      // Parse the date range from the request query
+      const from = new Date(fromDate);
+      const to = new Date(toDate);
 
-app.get("/admin/complaint-history", (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") {
-    return res.redirect("/login");
+      // Check for valid date range
+      if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+        message = 'Invalid date format. Please provide valid dates.';
+      } else if (from > to) {
+        message = 'From date cannot be later than To date.';
+      } else {
+        // Query to find users in the given date range
+        users = await User.find({
+          regDate: {
+            $gte: from,
+            $lte: to
+          }
+        });
+      }
+    }
+
+    // Render user data to the view (with or without message)
+    res.render('user-reports', { users, message });
+
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    res.render('user-reports', { message: 'An error occurred while fetching user data.' });
   }
-  res.render(path.join(__dirname, "admin", "views", "complaint-history"));
 });
 
+
+// Route for Complaints Report
+app.get('/admin/complaints-report', async (req, res) => {
+  try {
+    // Extract the start and end dates from query parameters (e.g., /admin/complaints-report?startDate=2025-01-01&endDate=2025-01-31)
+    const { startDate, endDate } = req.query;
+
+    let filter = {};
+
+    if (startDate && endDate) {
+      filter.regDate = { 
+        $gte: new Date(startDate), 
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Fetch complaints filtered by the given date range
+    const complaints = await Complaint.find(filter)
+      .populate('userId', 'first_name last_name'); // Populate userId with first_name and last_name
+
+    // Convert regDate to Date object for display and add complainant name
+    complaints.forEach(complaint => {
+      if (complaint.regDate && typeof complaint.regDate === 'string') {
+        complaint.regDate = new Date(complaint.regDate); // Convert the string to Date
+      }
+    });
+
+    // Render the complaints-report view with the filtered complaints
+    res.render('complaints-report', { complaints, startDate, endDate });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error fetching complaints report');
+  }
+});
+
+//search user
+app.get('/admin/search-user', async (req, res) => {
+  const searchQuery = req.query.searchQuery;
+
+  try {
+    const searchQuery = req.query.searchQuery || ''; // Get the search query from the URL query parameter
+    let users = [];
+
+    if (searchQuery) {
+      // Search users by name, email, or contact number (case-insensitive)
+      users = await User.find({
+        $or: [
+          { first_name: { $regex: searchQuery, $options: 'i' } },
+          { last_name: { $regex: searchQuery, $options: 'i' } },
+          { email: { $regex: searchQuery, $options: 'i' } },
+          { contact_no: { $regex: searchQuery, $options: 'i' } },
+        ],
+      });
+    }
+
+    res.render('search-user', { users });
+
+  } catch (error) {
+    console.error('Error searching users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Routes
+app.get('/admin/search-complaints', async (req, res) => {
+  const searchQuery = req.query.searchQuery?.trim();
+
+  if (!searchQuery) {
+    // Render the page without complaints if no search query is provided
+    return res.render('search-complaints', { complaints: null });
+  }
+
+  try {
+    // Search for complaints by complaintNumber, ComplainantName, category, or status
+    const complaints = await Complaint.find({
+      $or: [
+        { complaintNumber: { $regex: searchQuery, $options: 'i' } },
+        { ComplainantName: { $regex: searchQuery, $options: 'i' } },
+        { category: { $regex: searchQuery, $options: 'i' } },
+        { status: { $regex: searchQuery, $options: 'i' } },
+      ],
+    });
+
+    // Render the page with the search results
+    res.render('search-complaints', { complaints });
+  } catch (err) {
+    console.error('Error during search:', err);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+
+//
 app.get("/admin/settings", (req, res) => {
   if (!req.session.user || req.session.user.role !== "admin") {
     return res.redirect("/login");
