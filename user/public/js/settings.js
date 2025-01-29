@@ -1,80 +1,72 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('change-password-form');
-    const messageContainer = document.getElementById('message-container');
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // Clear previous messages
-        messageContainer.innerHTML = '';
-
-        const currentPassword = document.getElementById('current-password').value;
-        const newPassword = document.getElementById('new-password').value;
-        const confirmPassword = document.getElementById('confirm-password').value;
-
-        // Basic client-side validation
-        if (newPassword !== confirmPassword) {
-            showMessage('New passwords do not match', false);
-            return;
-        }
-
-        if (newPassword.length < 6) {
-            showMessage('Password must be at least 6 characters long', false);
-            return;
-        }
-
-        try {
-            const response = await fetch('/change-password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    currentPassword,
-                    newPassword,
-                    confirmPassword
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                showMessage(data.message, true);
-                // Clear form fields
-                form.reset();
-            } else {
-                showMessage(data.message, false);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showMessage('An error occurred. Please try again.', false);
-        }
-    });
-
-    function showMessage(message, isSuccess) {
-        messageContainer.innerHTML = message;
-        messageContainer.className = isSuccess ? 'success-message' : 'error-message';
-    }
-});
-//toggle passwords
-
-document.addEventListener("DOMContentLoaded", function () {
-    const togglePasswordIcons = document.querySelectorAll(".toggle-password");
-
-    togglePasswordIcons.forEach(icon => {
-        icon.addEventListener("click", function () {
-            const inputId = this.getAttribute("data-input");
-            const input = document.getElementById(inputId);
-
-            if (input.type === "password") {
-                input.type = "text";
-                this.classList.remove("fa-eye");
-                this.classList.add("fa-eye-slash");
-            } else {
-                input.type = "password";
-                this.classList.remove("fa-eye-slash");
-                this.classList.add("fa-eye");
-            }
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("password-form");
+    const currentPasswordField = document.getElementById("current-password");
+    const newPasswordField = document.getElementById("new-password");
+    const confirmPasswordField = document.getElementById("confirm-password");
+  
+    const currentPasswordError = document.createElement("div");
+    const newPasswordError = document.createElement("div");
+  
+    currentPasswordError.className = "error-message";
+    newPasswordError.className = "error-message";
+  
+    currentPasswordField.insertAdjacentElement("afterend", currentPasswordError);
+    confirmPasswordField.insertAdjacentElement("afterend", newPasswordError);
+  
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+  
+      // Clear previous error messages
+      currentPasswordError.textContent = "";
+      newPasswordError.textContent = "";
+  
+      const currentPassword = currentPasswordField.value;
+      const newPassword = newPasswordField.value;
+      const confirmPassword = confirmPasswordField.value;
+  
+      try {
+        const response = await fetch("/change-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
         });
+  
+        const data = await response.json();
+  
+        if (data.success) {
+          alert(data.message); // You can replace this with a success message in the UI
+          form.reset();
+        } else {
+          if (data.message.includes("Current password")) {
+            currentPasswordError.textContent = data.message;
+          } else if (data.message.includes("New password")) {
+            newPasswordError.textContent = data.message;
+          } else {
+            alert(data.message);
+          }
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert("An error occurred. Please try again.");
+      }
     });
-});
+  
+    // Toggle password visibility
+    document.querySelectorAll(".toggle-password").forEach((icon) => {
+      icon.addEventListener("click", () => {
+        const inputId = icon.getAttribute("data-input");
+        const input = document.getElementById(inputId);
+  
+        if (input.type === "password") {
+          input.type = "text";
+          icon.classList.remove("fa-eye");
+          icon.classList.add("fa-eye-slash");
+        } else {
+          input.type = "password";
+          icon.classList.remove("fa-eye-slash");
+          icon.classList.add("fa-eye");
+        }
+      });
+    });
+  });
+  

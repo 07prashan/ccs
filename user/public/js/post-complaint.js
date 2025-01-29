@@ -1,7 +1,5 @@
-
-
 // Initialize the map
-var map = L.map('map').setView([27.700769, 85.300140], 12); // Default location
+const map = L.map('map').setView([27.700769, 85.300140], 12); // Default location
 
 // Add OpenStreetMap tile layer
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -9,7 +7,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 // Add a marker at the center
-var marker = L.marker([27.700769, 85.300140], {
+const marker = L.marker([27.700769, 85.300140], {
     draggable: true // Make the marker draggable
 }).addTo(map);
 
@@ -18,7 +16,6 @@ const knownLocations = [
     { name: "Kathmandu", lat: 27.700769, lon: 85.300140 },
     { name: "Bhaktapur", lat: 27.6685, lon: 85.4280 },
     { name: "Lalitpur", lat: 27.6667, lon: 85.3325 }
-    // Add more locations here as needed
 ];
 
 // Function to calculate distance between two lat-lng points (Haversine formula)
@@ -35,32 +32,36 @@ function haversine(lat1, lon1, lat2, lon2) {
 }
 
 // Function to perform reverse geocoding and get the most localized location name
-function reverseGeocode(lat, lng) {
-    var url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
+async function reverseGeocode(lat, lng) {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
 
-    // Fetch the address details from Nominatim API
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            if (data && data.address) {
-                const address = data.address.road || data.address.suburb || data.address.city || data.address.village || data.address.country;
-                
-                // If a more detailed address is found, use it
-                if (address) {
-                    document.getElementById('location').value = address;
-                } else {
-                    // If no detailed address, use the nearest known location
-                    getNearestLocation(lat, lng);
-                }
-            } else {
-                // If no address, fall back to the nearest known location
-                getNearestLocation(lat, lng);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching the address:', error);
-            document.getElementById('location').value = "Error fetching address";
-        });
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data && data.address) {
+            // Extract the address or fallback to unknown
+            const address = data.address.road || data.address.suburb || data.address.city || data.address.village || data.address.country;
+            
+            // Update the input field with the fetched address
+            document.getElementById('location').value = address || "Unknown location";
+        } else {
+            // If no address found, fallback to nearest known location
+            getNearestLocation(lat, lng);
+        }
+
+        // Update hidden fields for latitude and longitude
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+
+        // Update hidden map link field
+        const mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
+        document.getElementById('mapLink').value = mapLink;
+
+    } catch (error) {
+        console.error('Error fetching the address:', error);
+        document.getElementById('location').value = "Error fetching address";
+    }
 }
 
 // Function to find the nearest known location
@@ -82,65 +83,70 @@ function getNearestLocation(lat, lon) {
 }
 
 // Update the location when the marker is dragged
-marker.on('dragend', function(event) {
-    var latLng = event.target.getLatLng();
+marker.on('dragend', function (event) {
+    const latLng = event.target.getLatLng();
     reverseGeocode(latLng.lat, latLng.lng); // Call reverse geocoding
 });
 
 // Allow the user to click on the map to select the location
-map.on('click', function(event) {
-    var latLng = event.latlng; // Get the latitude and longitude from the click
+map.on('click', function (event) {
+    const latLng = event.latlng; // Get the latitude and longitude from the click
     marker.setLatLng(latLng); // Update the marker position
     reverseGeocode(latLng.lat, latLng.lng); // Call reverse geocoding to get the address
 });
 
 // Handle form submission
-document.getElementById("complaint-form").addEventListener("submit", (e) => {
+document.getElementById("complaint-form").addEventListener("submit", async (e) => {
     e.preventDefault(); // Prevent default form submission behavior
 
     const category = document.getElementById("category").value;
+    // const urgency = document.getElementById("urgency").value;
     const description = document.getElementById("description").value;
     const location = document.getElementById("location").value;
+    const latitude = document.getElementById("latitude").value;
+    const longitude = document.getElementById("longitude").value;
+    const mapLink = document.getElementById("mapLink").value;
     const fileInput = document.getElementById("file");
     const file = fileInput.files[0]; // Get the uploaded file
 
     // Validate inputs
-    if (!category || !description || !location || !file) {
-        alert("Please fill in all fields and upload a file.");
+    if (!category || !description || !location) {
+        alert("Please fill in all required fields.");
         return;
     }
 
-    // Simulate form submission (or send to your server via fetch/axios)
+    // Prepare form data
     const formData = new FormData();
     formData.append("category", category);
+    formData.append("urgency", urgency);
     formData.append("description", description);
     formData.append("location", location);
+    formData.append("latitude", latitude);
+    formData.append("longitude", longitude);
+    formData.append("mapLink", mapLink);
+
     // Append file only if it exists
     if (file) {
         formData.append("file", file);
     }
 
-    fetch("/submit-complaint", {
-        method: "POST",
-        body: formData
-    })
-    .then((response) => {
-        if (response.redirected) {
-            // If redirected, navigate to the new URL
-            window.location.href = response.url;
+    // Submit form data to the server
+    try {
+        const response = await fetch("/submit-complaint", {
+            method: "POST",
+            body: formData,
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(result.message); // Show success alert
+            window.location.href = "/post-complaint"; // Redirect to the same page
         } else {
-            // If not redirected, try to parse response
-            return response.json();
+            alert(result.message); // Show error alert
         }
-    })
-    .then((data) => {
-        if (data && data.success) {
-            alert("Complaint submitted successfully!");
-            document.getElementById("complaint-form").reset();
-        }
-    })
-    .catch((err) => {
-        console.error("Error submitting complaint:", err);
+    } catch (error) {
         alert("An error occurred while submitting the complaint.");
-    });
+        console.error("Error:", error);
+    }
 });

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capital Complaint System</title>
+  <link rel="stylesheet" href="/administration/public/css/dashboard.css">
+  <script src="/administration/public/js/dashboard.js" defer></script>
+  
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <h1 class="main-title">Capital Complaint System</h1>
+  </header>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <nav>
+        <a href="/administration/home">Home</a>
+         <a href="/administration/dashboard">Dashboard</a>
+               
+
+        <!-- User Complaints Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">User Complaints</button>
+            <div class="dropdown-content">
+                <a href="/administration/all-complaints">All Complaints</a>
+                <a href="/administration/not-processed">Not Processed Yet</a>
+                <a href="/administration/in-process">In Process</a>
+                <a href="/administration/closed-complaints">Closed Complaints</a>
+            </div>
+        </div>
+
+        <!-- Reports Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">Reports</button>
+            <div class="dropdown-content">
+                <a href="/administration/user-reports">Users Report</a>
+                <a href="/administration/complaints-report">Complaints Report</a>
+            </div>
+        </div>
+
+        <!-- Search Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">Search</button>
+            <div class="dropdown-content">
+                <a href="/administration/search-user">User Search</a>
+                <a href="/administration/search-complaints">Search Complaints</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="profile-container">
+        <div class="dropdown">
+          <button class="dropbtn">Menu</button>
+          <div class="dropdown-content">
+              <a href="/settings">Settings</a>
+              <a href="#help">Profile</a>
+              <a href="/logout">Logout</a>
+          </div>
+      </div>
+      </div>
+    </div>
+
+
+    <main class="dashboard-container">
+        <h2>Dashboard</h2>
+        <div class="stats-grid">
+            <!-- Total Users -->
+            <div class="stat-card total-users">
+                <h3><%= stats.totalUsers %></h3>
+                <p>Total Users</p>
+            </div>
+        
+            <!-- Total Categories -->
+            <div class="stat-card total-categories">
+                <h3><%= stats.totalCategories %></h3>
+                <p>Total Categories</p>
+            </div>
+        
+            <!-- Total Complaints -->
+            <div class="stat-card total-complaints">
+                <h3><%= stats.totalComplaints %></h3>
+                <p>Total Complaints</p>
+            </div>
+        
+            <!-- Pending Complaints -->
+            <div class="stat-card pending-complaints">
+                <h3><%= stats.pendingComplaints %></h3>
+                <p>Pending Complaints</p>
+            </div>
+        
+            <!-- In Process Complaints -->
+            <div class="stat-card in-process-complaints">
+                <h3><%= stats.inProcessComplaints %></h3>
+                <p>In Process</p>
+            </div>
+        
+            <!-- Closed Complaints -->
+            <div class="stat-card closed-complaints">
+                <h3><%= stats.closedComplaints %></h3>
+                <p>Closed Complaints</p>
+            </div>
+        </div>
+    </main>
+
+  
+</body>
+</html>

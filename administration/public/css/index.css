@@ -1,0 +1,252 @@
+/* General Reset */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+}
+
+
+/* Title Styling */
+.main-title {
+    text-align: center;
+    font-size: 2.5em;
+    font-weight: bold;
+    margin: 20px 0;
+    color: #1a73e8;
+}
+
+
+/* Navbar Styling */
+/* Navbar Styling */
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #1a73e8;
+    padding: 10px 20px;
+}
+.navbar a {
+    text-decoration: none;
+    color: white;
+    padding: 10px 20px;
+    font-size: 1.2em;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.navbar a:hover {
+    background-color: #105cb6;
+}
+/* Dropdown Container */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Dropdown Button */
+.dropbtn {
+    background-color: #1a73e8;
+    color: white;
+    padding: 10px 15px;
+    font-size: 1em;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-left: 10px;
+}
+
+/* Dropdown Content (Hidden by Default) */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+    border-radius: 5px;
+}
+
+/* Links inside Dropdown */
+.dropdown-content a {
+    color: black;
+    padding: 10px;
+    text-decoration: none;
+    display: block;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+/* Show Dropdown on Hover */
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+/* Hover Effects */
+.dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+
+/* Profile Button Styling */
+.profile-container .dropbtn {
+    background-color: #1a73e8;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Complaints Section */
+.complaints {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.complaints h1 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Post Complaint Form */
+.post-complain {
+    padding: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.post-complain form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.post-complain form label {
+    font-weight: bold;
+}
+
+.post-complain form textarea,
+.post-complain form input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.post-complain form button {
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #1a73e8;
+    color: white;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+.post-complain form button:hover {
+    background-color: #105cb6;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Feeds Section */
+.feeds-section {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    margin-top: 30px;
+}
+
+.feeds-section h2 {
+    color: #1a73e8;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.complaint-card {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    background-color: #f9f9f9;
+}
+
+.complaint-card img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+.complaint-card .card-content {
+    padding: 15px;
+}
+
+.complaint-card .description {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.complaint-card .location {
+    font-size: 0.9em;
+    color: #666;
+}
+
+.complaint-card .status {
+    text-align: center;
+    font-weight: bold;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.status.solved {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status.unsolved {
+    background-color: #f8d7da;
+    color: #721c24;
+}

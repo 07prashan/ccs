@@ -4,9 +4,12 @@ const bodyParser = require("body-parser");
 const bcrypt = require("bcryptjs");
 const path = require("path");
 const session = require("express-session");
+const MongoStore = require('connect-mongo');
 const multer = require("multer");
 const { body, validationResult } = require("express-validator"); // Importing express-validator
 const app = express();
+const flash = require("connect-flash");
+const fs = require('fs');
 const router = express.Router();
 const Category = require('./models/Category');  // Add this ONCE at the top with other requires
 // const User = require('../models/User'); // Import User model
@@ -14,55 +17,81 @@ const Category = require('./models/Category');  // Add this ONCE at the top with
 
 // Middleware
 app.use(express.json());
+// Configure flash messages
+app.use(flash());
 app.use(bodyParser.urlencoded({ extended: true }));
-// Set up the view engine to use EJS for rendering
-app.set("view engine", "ejs");
 
 // Set up static file directories for each role
 app.use(express.static(path.join(__dirname, "user", "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin", "public")));
-app.use("/administration", express.static(path.join(__dirname, "administration", "public")));
-
 app.use('/admin/public', express.static(path.join(__dirname, 'admin', 'public')));
+app.use('/administration/public', express.static(path.join(__dirname, 'administration','public')));
 // Serve static files from the 'uploads' directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// Add view directories for user, admin, and administration roles
-// Make sure this directory exists
+
+// Set up the view engine to use EJS for rendering
+app.set("view engine", "ejs");
+
 const uploadsDirectory = path.join(__dirname, 'uploads');
 app.set("views", [
   path.join(__dirname, "user", "views"),
   path.join(__dirname, "admin", "views"),
   path.join(__dirname, "administration", "views"),
 ]);
-
-
-// Middleware to check if user is an admin or developer
-function checkAdminOrDeveloper(req, res, next) {
-  if (req.user.role !== 'admin' && req.user.role !== 'developer') {
-    return res.status(403).send('Access denied');
-  }
-  next();
-}
-// Middleware to check the user's role
-function checkRole(role) {
-  return (req, res, next) => {
-    if (!req.session.user || req.session.user.role !== role) {
-      return res.redirect("/login");
-    }
-    next();
-  };
-}
-
-// Session Middleware
+// Session configuration
 app.use(
   session({
-    secret: "your_secret_key", // Secret for session encryption (use an env variable in production)
-    resave: false, // Avoid resaving unchanged sessions
-    saveUninitialized: true, // Save uninitialized sessions
-    cookie: { secure: false }, // Set to true if using HTTPS
+    secret: process.env.SESSION_SECRET || "your_secret_key",
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: 'mongodb+srv://prashant:204060bde@cluster0.veh0f.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+      collection: 'sessions'
+    }),
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000
+    }
   })
 );
 
+// Authentication middleware
+const isAuthenticated = (req, res, next) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  next();
+};
+
+// Role-based middleware
+const checkAdmin = (req, res, next) => {
+  if (!req.session.user || req.session.user.role !== 'admin') {
+    return res.redirect('/login');
+  }
+  next();
+};
+
+const checkAdministrative = (req, res, next) => {
+  if (!req.session.user || req.session.user.role !== 'administrative') {
+    return res.redirect('/login');
+  }
+  next();
+};
+
+const checkAdminOrDeveloper = (req, res, next) => {
+  if (!req.session.user || (req.session.user.role !== 'admin' && req.session.user.role !== 'developer')) {
+    return res.status(403).send('Access denied');
+  }
+  next();
+};
+
+const checkAdministrationAccess = (req, res, next) => {
+  if (!req.session.user || (req.session.user.role !== 'admin' && req.session.user.role !== 'administrative')) {
+    return res.redirect('/login');
+  }
+  next();
+};
 // MongoDB Connection
 const mongoURI =
   "mongodb+srv://prashant:204060bde@cluster0.veh0f.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
@@ -72,40 +101,36 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Schema and Models
-
-// User schema to store user information
-const userSchema = new mongoose.Schema({
-  first_name: String,
-  last_name: String,
-  contact_no: String,
-  email: { type: String, unique: true },
-  password: String,
-  role: { type: String, enum: ["user", "admin", "administrative"], default: "user" }, // Default role
-  regDate: { type: Date, default: Date.now },
-});
-
-const User = mongoose.model("User", userSchema); // Compile the user model
+const User = require('./models/User'); // Import User model
+// Update users without a regDate
+// const User = mongoose.model("User", userSchema); // Compile the user model
 User.updateMany({ regDate: { $exists: false } }, { $set: { regDate: new Date() } })
   .then(() => console.log('RegDate added to users without it'))
   .catch(err => console.error('Error updating users:', err));
 
 // Complaint schema to handle user complaints
 const complaintSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Reference to User model
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   complaintNumber: { type: String, required: true },
-  ComplainantName: {type: String, required: true },
+  ComplainantName: { type: String, required: true },
   category: { type: String, required: true },
+  urgency: { type: String, required: true },
   description: { type: String, required: true },
-  location: { type: String, required: true },
+  location: { type: String, required: true }, // Name of the location
+  latitude: { type: Number, required: true }, // Latitude of the location
+  longitude: { type: Number, required: true }, // Longitude of the location
+  mapLink: { type: String, required: true }, // Direct map link
   file: { type: String },
   regDate: { type: Date, default: Date.now },
-  status: { type: String, enum: ["Not Processed Yet", "In Process", "Closed Complaint"], default: "Not Processed Yet" } // Add the status field
+  status: {
+    type: String,
+    enum: ["Not Processed Yet", "In Process", "Closed Complaint"],
+    default: "Not Processed Yet",
+  },
 });
 
-const Complaint = mongoose.model("Complaint", complaintSchema); // Compile the complaint model
+const Complaint = mongoose.model("Complaint", complaintSchema);
 module.exports = Complaint;
-
-
 
 
 // Define storage engine for multer
@@ -290,7 +315,7 @@ app.get("/logout", (req, res) => {
     res.redirect("/login");
   });
 });
-
+// GET Route: Render the post-complaint page
 app.get("/post-complaint", async (req, res) => {
   if (!req.session.user) {
     return res.redirect("/login");
@@ -298,34 +323,43 @@ app.get("/post-complaint", async (req, res) => {
   
   try {
     const categories = await Category.find({});
-    res.render("post-complaint", { categories });
+    res.render("post-complaint", { categories }); // Pass categories to the template
   } catch (error) {
     console.error("Error fetching categories:", error);
     res.status(500).send("Error loading categories.");
   }
 });
 
+// POST Route: Handle complaint submission
+const { predictUrgency } = require('./ai/predict-urgency');
 app.post(
   "/submit-complaint",
   upload.single("file"),
-  body("category").notEmpty().withMessage("Category is required"),
-  body("description").notEmpty().withMessage("Description is required"),
-  body("location").notEmpty().withMessage("Location is required"),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        success: false, 
-        errors: errors.array() 
+      return res.status(400).render("post-complaint", {
+        success: false,
+        errors: errors.array(),
+        categories: await Category.find({}),
       });
     }
 
     try {
-      const { category, description, location } = req.body;
+      const { category, description, location, latitude, longitude, mapLink } = req.body;
       const userSession = req.session.user;
-      
+
       if (!userSession) {
-        return res.status(401).json({ success: false, message: "Unauthorized" });
+        return res.status(401).redirect("/login");
+      }
+
+      // AI-based urgency prediction with fallback
+      let urgency;
+      try {
+        urgency = await predictUrgency(description);
+      } catch (aiError) {
+        console.error("AI prediction failed, using fallback:", aiError);
+        urgency = 'Medium'; // Fallback value
       }
 
       const ComplainantName = `${userSession.first_name} ${userSession.last_name}`;
@@ -337,32 +371,30 @@ app.post(
         complaintNumber,
         ComplainantName,
         category,
+        urgency, // Always set, either from AI or fallback
         description,
         location,
+        latitude,
+        longitude,
+        mapLink,
         file: req.file ? req.file.filename : null,
         regDate: new Date(),
-        status: "Not Processed Yet"
+        status: "Not Processed Yet",
       });
 
       await newComplaint.save();
-      
-      // Return success JSON response instead of redirecting
-      return res.status(200).json({
-        success: true,
-        message: "Complaint submitted successfully",
-        complaint: newComplaint
-      });
+
+      req.flash("success", "Complaint submitted successfully!");
+      res.redirect("/post-complaint");
 
     } catch (error) {
       console.error("Error submitting complaint:", error);
-      return res.status(500).json({ 
-        success: false, 
-        message: "Error submitting complaint",
-        error: error.message 
-      });
+      req.flash("error", "Error submitting complaint. Please try again.");
+      res.redirect("/post-complaint");
     }
   }
 );
+
 
 
 // Complaint history
@@ -454,14 +486,36 @@ app.get("/complaint-details/:id", async (req, res) => {
   }
 });
 
-// Settings page route
-app.get("/settings", (req, res) => {
-  if (!req.session.user) {
-    return res.redirect("/login");
-  }
-  res.render("settings", { user: req.session.user });
-});
 
+// User settings route
+app.get('/settings', (req, res) => {
+  console.log('Full Session:', req.session);
+  
+  // Specific role-based checks
+  if (req.session && req.session.user) {
+    console.log('User Session Found');
+    return res.render(path.join(__dirname, 'user/views/settings.ejs'), { 
+      user: req.session.user 
+    });
+  }
+  
+  if (req.session && req.session.admin) {
+    console.log('Admin Session Found');
+    return res.render(path.join(__dirname, 'admin/views/settings.ejs'), { 
+      admin: req.session.admin 
+    });
+  }
+  
+  if (req.session && req.session.administration) {
+    console.log('Administration Session Found');
+    return res.render(path.join(__dirname, 'administration/views/settings.ejs'), { 
+      administration: req.session.administration 
+    });
+  }
+  
+  console.log('No Valid Session');
+  res.redirect('/login');
+});
 // Password change route
 app.post("/change-password", async (req, res) => {
   if (!req.session.user) {
@@ -538,11 +592,6 @@ app.post("/change-password", async (req, res) => {
 
 
 
-
-
-
-
-
 //admin view
 // Admin Routes
 app.get("/admin", (req, res) => {
@@ -564,14 +613,21 @@ app.get("/debug-statuses", async (req, res) => {
       res.status(500).send('Error checking statuses');
   }
 });
-// Admin Dashboard Route
+const checkAdminAccess = (req, res, next) => {
+  // Check if the user is logged in with admin role
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.redirect("/login");
+  }
+  next();
+};
+
 // Admin Dashboard Route
 app.get("/admin/dashboard", async (req, res) => {
   // Log session user for debugging
   console.log(req.session.user);
 
   // Check if the user is logged in and has admin role
-  if (!req.session.user || req.session.user.role !== "admin") {
+  if (!req.session.user || !(req.session.user.role === "admin" || req.session.user.role === "administrative")) {
     return res.redirect("/login");
   }
 
@@ -849,6 +905,7 @@ app.get("/admin/user-complaints/:id", async (req, res) => {
           complaintNumber: c.complaintNumber,
           complainantName: `${c.userId.first_name} ${c.userId.last_name}`, // Construct the complainant's full name
           category: c.category,
+          urgency: c.urgency,
           description: c.description,
           location: c.location,
           file: c.file,
@@ -861,7 +918,6 @@ app.get("/admin/user-complaints/:id", async (req, res) => {
       res.status(500).send("Server Error");
   }
 });
-
 // Route to manage all complaints page
 app.get('/admin/all-complaints', async (req, res) => {
   try {
@@ -1078,6 +1134,7 @@ app.get('/admin/search-complaints', async (req, res) => {
         { complaintNumber: { $regex: searchQuery, $options: 'i' } },
         { ComplainantName: { $regex: searchQuery, $options: 'i' } },
         { category: { $regex: searchQuery, $options: 'i' } },
+        { urgency: { $regex: searchQuery, $options: 'i' } },
         { status: { $regex: searchQuery, $options: 'i' } },
       ],
     });
@@ -1101,6 +1158,439 @@ app.get("/admin/settings", (req, res) => {
 });
 
 
+
+
+
+
+
+
+
+// General route protection middleware
+const checkAdministrativeAccess = (req, res, next) => {
+  // Check if the user is logged in with administrative role
+  if (!req.session.user || req.session.user.role !== "administrative") {
+    return res.redirect("/login");
+  }
+  next();
+};
+
+
+// Redirect to administration index.ejs
+app.get('/administration', (req, res) => {
+  res.render('index'); // Renders the 'index.ejs' from 'administration/views'
+});
+
+
+
+ // Ensure this part is inside an async function
+// Administration Dashboard Route
+// Administration Dashboard Route
+app.get("/administration/dashboard", async (req, res) => {
+  console.log(req.session.user);
+
+  // Check if the user is logged in and has 'admin' or 'administrative' role
+  if (!req.session.user || !(req.session.user.role === "administrative")) {
+    return res.redirect("/login");
+  }
+
+  try {
+    // Fetch stats from the database
+    const totalUsers = await User.countDocuments({ role: "user" });
+    const totalCategories = await Category.countDocuments();
+    const totalComplaints = await Complaint.countDocuments();
+    const pendingComplaints = await Complaint.countDocuments({ status: "Not Processed Yet" });
+    const inProcessComplaints = await Complaint.countDocuments({ status: "In Process" });
+    const closedComplaints = await Complaint.countDocuments({ status: "Closed Complaint" });
+
+    // Render the dashboard view with fetched stats
+    res.render(path.join(__dirname, "administration", "views", "dashboard"), {
+      admin: req.session.user,
+      stats: {
+        totalUsers,
+        totalCategories,
+        totalComplaints,
+        pendingComplaints,
+        inProcessComplaints,
+        closedComplaints,
+      }
+    });
+  } catch (err) {
+    console.error("Error loading administration dashboard:", err);
+    res.status(500).send("Error loading dashboard.");
+  }
+});
+
+
+// API for administration dashboard stats
+app.get("/api/administration-dashboard-stats", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    // Check counts directly for each status
+    const pendingComplaints = await Complaint.countDocuments({
+      status: "Not Processed Yet"
+    });
+
+    const inProcessComplaints = await Complaint.countDocuments({
+      status: "In Process"
+    });
+
+    const closedComplaints = await Complaint.countDocuments({
+      status: "Closed Complaint"
+    });
+
+    // Fetch other stats (total users, total categories)
+    const totalUsers = await User.countDocuments({ role: "user" });
+    const totalCategories = await Category.countDocuments();
+
+    // Return the stats as JSON response
+    res.json({
+      totalUsers,
+      totalCategories,
+      pendingComplaints,
+      inProcessComplaints,
+      closedComplaints,
+    });
+  } catch (err) {
+    console.error("Error fetching administration stats:", err);
+    res.status(500).json({ error: "Server Error" });
+  }
+});
+
+
+// Administration route for all-complaints page
+
+app.get('/administration/all-complaints', checkAdministrative, async (req, res) => {
+  try {
+    const complaints = await Complaint.find()
+      .populate('userId', 'first_name last_name')
+      .sort({ regDate: -1 });
+    
+    complaints.forEach(complaint => {
+      if (complaint.regDate && typeof complaint.regDate === 'string') {
+        complaint.regDate = new Date(complaint.regDate);
+      }
+    });
+    
+    // Debugging: Log the full path to the view
+    const viewPath = path.join(__dirname, 'administration/views/all-complaints.ejs');
+    console.log('Attempting to render view from:', viewPath);
+    
+    // Explicitly specify the full path
+    res.render(viewPath, {
+      complaints,
+      user: req.session.user
+    });
+  } catch (error) {
+    console.error('Error in /administration/all-complaints:', error);
+    
+    // More detailed error handling
+    if (error.code === 'MODULE_NOT_FOUND') {
+      console.error('View file not found. Check the file path and existence of all-complaints.ejs');
+    }
+    
+    res.status(500).send('Error fetching complaints: ' + error.message);
+  }
+});
+
+// Route to update complaint status
+app.post('/administration/update-complaint-status/:id', checkAdministrationAccess, async (req, res) => {
+  try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const updatedComplaint = await Complaint.findByIdAndUpdate(
+          id,
+          { status },
+          { new: true }
+      );
+
+      if (!updatedComplaint) {
+          return res.status(404).json({ message: 'Complaint not found' });
+      }
+
+      res.json({ 
+          message: 'Status updated successfully',
+          complaint: updatedComplaint 
+      });
+
+  } catch (error) {
+      console.error('Error updating complaint status:', error);
+      res.status(500).json({ message: 'Failed to update complaint status' });
+  }
+});
+
+// Route to delete complaint
+app.delete('/administration/delete-complaint/:id', checkAdministrationAccess, async (req, res) => {
+  try {
+      const { id } = req.params;
+      const deletedComplaint = await Complaint.findByIdAndDelete(id);
+
+      if (!deletedComplaint) {
+          return res.status(404).json({ message: 'Complaint not found' });
+      }
+
+      res.json({ message: 'Complaint deleted successfully' });
+
+  } catch (error) {
+      console.error('Error deleting complaint:', error);
+      res.status(500).json({ message: 'Failed to delete complaint' });
+  }
+});
+
+
+
+
+// Route for "Not Processed Complaints"
+app.get('/administration/not-processed', checkAdministrativeAccess, async (req, res) => {
+  try {
+    // Fetch complaints with "Not Processed Yet" status and populate userId to get complainant name
+    const complaints = await Complaint.find({ status: "Not Processed Yet" })
+      .populate('userId', 'first_name last_name');
+    
+    // Debugging: Log the view path and full file system path
+    const viewPath = path.join(__dirname, 'administration/views/not-processed.ejs');
+    // console.log('Attempting to render view from:', viewPath);
+    
+    // Use absolute path rendering
+    res.render(viewPath, { 
+      complaints, 
+      user: req.session.user 
+    });
+  } catch (error) {
+    console.error("Error fetching complaints:", error);
+    res.status(500).send('Failed to load complaints');
+  }
+});
+
+// Route to show "In Process" complaints
+app.get('/administration/in-process', checkAdministrativeAccess, async (req, res) => {
+  try {
+    // Fetch complaints with "In Process" status and populate userId to get complainant name
+    const complaints = await Complaint.find({ status: 'In Process' })
+      .populate('userId', 'first_name last_name');
+    
+      // Use absolute path rendering
+    const viewPath = path.join(__dirname, 'administration/views/in-process.ejs');
+    
+    res.render(viewPath, { 
+      complaints, 
+      user: req.session.user 
+    });
+  } catch (error) {
+    console.error("Error fetching complaints:", error);
+    res.status(500).send('Error fetching complaints');
+  }
+});
+
+// Route to show "Closed Complaints"
+app.get('/administration/closed-complaints', checkAdministrativeAccess, async (req, res) => {
+  try {
+    // Fetch complaints with "Closed Complaint" status and populate userId to get complainant name
+    const complaints = await Complaint.find({ status: 'Closed Complaint' })
+      .populate('userId', 'first_name last_name');
+   // Use absolute path rendering
+   const viewPath = path.join(__dirname, 'administration/views/closed-complaints.ejs');
+    
+   res.render(viewPath, { 
+     complaints, 
+     user: req.session.user 
+    });
+  } catch (error) {
+    console.error("Error fetching complaints:", error);
+    res.status(500).send('Error fetching complaints');
+  }
+});
+
+app.get('/administration/user-reports', checkAdministrativeAccess, async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.query;
+    let users = [];
+    let message = null;
+
+    // If no date range is provided, fetch all users
+    if (!fromDate || !toDate) {
+      users = await User.find({});
+    } else {
+      // Parse the date range from the request query
+      const from = new Date(fromDate);
+      const to = new Date(toDate);
+
+      // Check for valid date range
+      if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+        message = 'Invalid date format. Please provide valid dates.';
+      } else if (from > to) {
+        message = 'From date cannot be later than To date.';
+      } else {
+        // Query to find users in the given date range
+        users = await User.find({
+          regDate: {
+            $gte: from,
+            $lte: to
+          }
+        });
+      }
+    }
+
+    // Use absolute path rendering
+    const viewPath = path.join(__dirname, 'administration/views/user-reports.ejs');
+    
+    // Render user data to the view (with or without message)
+    res.render(viewPath, { 
+      users, 
+      message,
+      user: req.session.user 
+    });
+
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    
+    const viewPath = path.join(__dirname, 'administration/views/user-reports.ejs');
+    res.render(viewPath, { 
+      users: [], 
+      message: 'An error occurred while fetching user data.',
+      user: req.session.user 
+    });
+  }
+});
+
+// Route for Complaints Report
+app.get('/administration/complaints-report', checkAdministrativeAccess, async (req, res) => {
+  try {
+    // Extract the start and end dates from query parameters
+    const { startDate, endDate } = req.query;
+
+    let filter = {};
+
+    if (startDate && endDate) {
+      filter.regDate = { 
+        $gte: new Date(startDate), 
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Fetch complaints filtered by the given date range
+    const complaints = await Complaint.find(filter)
+      .populate('userId', 'first_name last_name');
+
+    // Convert regDate to Date object for display and add complainant name
+    complaints.forEach(complaint => {
+      if (complaint.regDate && typeof complaint.regDate === 'string') {
+        complaint.regDate = new Date(complaint.regDate);
+      }
+    });
+
+    // Use absolute path rendering
+    const viewPath = path.join(__dirname, 'administration/views/complaints-report.ejs');
+    
+    // Render the complaints-report view with the filtered complaints
+    res.render(viewPath, { 
+      complaints, 
+      startDate, 
+      endDate,
+      user: req.session.user 
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error fetching complaints report');
+  }
+});
+
+// Search user route
+app.get('/administration/search-user', checkAdministrativeAccess, async (req, res) => {
+  const searchQuery = req.query.searchQuery;
+
+  try {
+    const searchQuery = req.query.searchQuery || '';
+    let users = [];
+
+    if (searchQuery) {
+      // Search users by name, email, or contact number (case-insensitive)
+      users = await User.find({
+        $or: [
+          { first_name: { $regex: searchQuery, $options: 'i' } },
+          { last_name: { $regex: searchQuery, $options: 'i' } },
+          { email: { $regex: searchQuery, $options: 'i' } },
+          { contact_no: { $regex: searchQuery, $options: 'i' } },
+        ],
+      });
+    }
+
+    // Use absolute path rendering
+    const viewPath = path.join(__dirname, 'administration/views/search-user.ejs');
+    
+    res.render(viewPath, { 
+      users,
+      user: req.session.user,
+      searchQuery 
+    });
+
+  } catch (error) {
+    console.error('Error searching users:', error);
+    
+    // Use absolute path for error rendering
+    const viewPath = path.join(__dirname, 'administration/views/search-user.ejs');
+    res.status(500).render(viewPath, { 
+      users: [],
+      user: req.session.user,
+      searchQuery: '',
+      error: 'Internal server error' 
+    });
+  }
+});
+
+// Search complaints route
+app.get('/administration/search-complaints', checkAdministrativeAccess, async (req, res) => {
+  const searchQuery = req.query.searchQuery?.trim();
+
+  if (!searchQuery) {
+    // Use absolute path rendering when no search query
+    const viewPath = path.join(__dirname, 'administration/views/search-complaints.ejs');
+    return res.render(viewPath, { 
+      complaints: null,
+      user: req.session.user,
+      searchQuery: '' 
+    });
+  }
+
+  try {
+    // Search for complaints by complaintNumber, ComplainantName, category, or status
+    const complaints = await Complaint.find({
+      $or: [
+        { complaintNumber: { $regex: searchQuery, $options: 'i' } },
+        { ComplainantName: { $regex: searchQuery, $options: 'i' } },
+        { category: { $regex: searchQuery, $options: 'i' } },
+        { urgency: { $regex: searchQuery, $options: 'i' } },
+        { status: { $regex: searchQuery, $options: 'i' } },
+
+      ],
+    });
+
+    // Use absolute path rendering with .ejs extension
+    const viewPath = path.join(__dirname, 'administration/views/search-complaints.ejs');
+
+    // Render the page with the search results
+    res.render(viewPath, { 
+      complaints,
+      user: req.session.user,
+      searchQuery 
+    });
+  } catch (err) {
+    console.error('Error during search:', err);
+    
+    // Use absolute path for error rendering
+    const viewPath = path.join(__dirname, 'administration/views/search-complaints.ejs');
+    res.status(500).render(viewPath, { 
+      complaints: [],
+      user: req.session.user,
+      searchQuery: '',
+      error: 'Internal Server Error' 
+    });
+  }
+});
+
 // Logout
 app.get("/logout", (req, res) => {
   req.session.destroy((err) => {
@@ -1117,3 +1607,4 @@ app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 
 });
+

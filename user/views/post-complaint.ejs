@@ -26,15 +26,15 @@
         </nav>
         <div class="profile-container">
             <div class="dropdown">
-                <button class="dropbtn">Profile</button>
-                <div class="dropdown-content">
-                    <a href="/settings">Settings</a>
-                    <a href="#help">Help</a>
-                    <a href="/logout">Logout</a>
-                </div>
-            </div>
+              <button class="dropbtn">Menu</button>
+              <div class="dropdown-content">
+                  <a href="/settings">Settings</a>
+                  <a href="#help">Profile</a>
+                  <a href="/logout">Logout</a>
+              </div>
+          </div>
+          </div>
         </div>
-    </div>
 
     <!-- Post a Complaint Section -->
     <main class="post-complaint">
@@ -55,6 +55,12 @@
                     <% } %>
                 </select>
             </div>
+
+            <td>
+                <span class="urgency-<%= complaint.urgency.toLowerCase() %>">
+                  <%= complaint.urgency %>
+                </span>
+              </td>
             
             <!-- Complaint Description -->
             <div class="form-group">
@@ -64,10 +70,15 @@
 
             <!-- Location Section -->
             <div class="form-group">
-                <label for="location">Location</label>
-                <input type="text" id="location" name="location" placeholder="Select location from the map" readonly required>
+                <label for="location">Location Name</label>
+                <input type="text" id="location" name="location" placeholder="Select location from the map" required>
                 <div id="map" style="height: 400px; width: 100%;"></div>
             </div>
+
+            <!-- Hidden fields for latitude, longitude, and map link -->
+            <input type="hidden" id="latitude" name="latitude">
+            <input type="hidden" id="longitude" name="longitude">
+            <input type="hidden" id="mapLink" name="mapLink">
 
             <!-- File Upload -->
             <div class="form-group">
@@ -81,8 +92,46 @@
             </div>
         </form>
     </main>
+   
+      
 
     <!-- Leaflet JS for the map -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        const map = L.map("map").setView([27.7172, 85.3240], 13); // Default to Kathmandu
+
+        // Add OpenStreetMap tiles
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Add a marker with drag functionality
+        const marker = L.marker([27.7172, 85.3240], { draggable: true }).addTo(map);
+
+        // Update hidden fields when the marker is dragged or the map is clicked
+        function updateLocation(lat, lng) {
+            document.getElementById("latitude").value = lat;
+            document.getElementById("longitude").value = lng;
+
+            // Generate a map link for Google Maps
+            const mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
+            document.getElementById("mapLink").value = mapLink;
+        }
+
+        marker.on("dragend", function (e) {
+            const latLng = e.target.getLatLng();
+            updateLocation(latLng.lat, latLng.lng);
+        });
+
+        map.on("click", function (e) {
+            const latLng = e.latlng;
+            marker.setLatLng(latLng);
+            updateLocation(latLng.lat, latLng.lng);
+        });
+
+        // Initial location update
+        updateLocation(27.7172, 85.3240);
+    </script>
 </body>
 </html>

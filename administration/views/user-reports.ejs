@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capital Complaint System</title>
+  <link rel="stylesheet" href="/administration/public/css/user-reports.css">
+  <script src="/administration/public/js/user-reports.js" defer></script>
+  
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <h1 class="main-title">Capital Complaint System</h1>
+  </header>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <nav>
+        <a href="/administration/home">Home</a>
+         <a href="/administration/dashboard">Dashboard</a>
+               
+
+        <!-- User Complaints Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">User Complaints</button>
+            <div class="dropdown-content">
+                <a href="/administration/all-complaints">All Complaints</a>
+                <a href="/administration/not-processed">Not Processed Yet</a>
+                <a href="/administration/in-process">In Process</a>
+                <a href="/administration/closed-complaints">Closed Complaints</a>
+            </div>
+        </div>
+
+        <!-- Reports Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">Reports</button>
+            <div class="dropdown-content">
+                <a href="/administration/user-reports">Users Report</a>
+                <a href="/administration/complaints-report">Complaints Report</a>
+            </div>
+        </div>
+
+        <!-- Search Dropdown -->
+        <div class="dropdown">
+            <button class="dropbtn">Search</button>
+            <div class="dropdown-content">
+                <a href="/administration/search-user">User Search</a>
+                <a href="/administration/search-complaints">Search Complaints</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="profile-container">
+        <div class="dropdown">
+          <button class="dropbtn">Menu</button>
+          <div class="dropdown-content">
+              <a href="/settings">Settings</a>
+              <a href="#help">Profile</a>
+              <a href="/logout">Logout</a>
+          </div>
+      </div>
+      </div>
+    </div>
+
+<!-- Main Content -->
+<div class="container">
+    <h1 class="text-center">User Reports</h1>
+
+    <!-- Date Range Section -->
+    <div class="date-range-section">
+        <form id="date-form" class="date-filter-form">
+            <div class="form-group">
+                <label for="from-date">From Date:</label>
+                <input type="date" id="from-date" name="fromDate" required>
+            </div>
+            <div class="form-group">
+                <label for="to-date">To Date:</label>
+                <input type="date" id="to-date" name="toDate" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Generate Report</button>
+        </form>
+        
+        
+    </div>
+
+    <% if (message) { %>
+        <div class="message <%= message.includes('Error') ? 'error-message' : 'success-message' %>">
+            <%= message %>
+        </div>
+    <% } %>
+    
+    <% if (users && users.length > 0) { %>
+        <table class="user-reports-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Contact</th>
+                    <th>Role</th>
+                    <th>Registration Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% users.forEach(user => { %>
+                    <tr>
+                        <td><%= user.first_name %> <%= user.last_name %></td>
+                        <td><%= user.email %></td>
+                        <td><%= user.contact_no %></td>
+                        <td><%= user.role %></td>
+                        <td><%= new Date(user.regDate).toDateString() %></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    <% } else { %>
+        <p class="no-data">No users found for the selected date range.</p>
+    <% } %>
+</div>
+  
+</body>
+</html>
