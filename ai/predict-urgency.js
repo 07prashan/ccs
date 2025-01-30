@@ -1,4 +1,4 @@
-const tf = require('@tensorflow/tfjs-node');
+const tf = require('@tensorflow/tfjs');
 const natural = require('natural');
 const { preprocessText } = require('./text-preprocessor');
 
