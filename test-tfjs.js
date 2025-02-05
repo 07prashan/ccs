@@ -1,5 +1,5 @@
 // test-tfjs.js
-const tf = require('@tensorflow/tfjs-node');
+const tf = require('@tensorflow/tfjs');
 
 (async () => {
   const model = tf.sequential();

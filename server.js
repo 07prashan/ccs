@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcryptjs");
 const path = require("path");
+// const Department = require('./models/department');
+// const ComplaintRouter = require('./services/complaintRouter');
 const session = require("express-session");
 const MongoStore = require('connect-mongo');
 const multer = require("multer");
@@ -10,17 +12,28 @@ const { body, validationResult } = require("express-validator"); // Importing ex
 const app = express();
 const flash = require("connect-flash");
 const fs = require('fs');
+const autoIncrement = require('mongoose-sequence')(mongoose);
 const router = express.Router();
+const { Complaint } = require("./models/complaint");
+const { createComplaintNumber } = require("./models/complaint");
 const Category = require('./models/Category');  // Add this ONCE at the top with other requires
 // const User = require('../models/User'); // Import User model
-
-
+const UrgencyDetector = require('./ai/urgencyDetection');
+const urgencyDetector = new UrgencyDetector();
+const { predictUrgency } = require('./ai/predict-urgency');
 // Middleware
 app.use(express.json());
 // Configure flash messages
 app.use(flash());
 app.use(bodyParser.urlencoded({ extended: true }));
-
+// Middleware to process urgency level
+const processUrgency = (req, res, next) => {
+  if (req.body.description) {
+      const urgencyResult = urgencyDetector.getUrgencyLevel(req.body.description);
+      req.body.urgency = urgencyResult;
+  }
+  next();
+};
 // Set up static file directories for each role
 app.use(express.static(path.join(__dirname, "user", "public")));
 app.use("/admin", express.static(path.join(__dirname, "admin", "public")));
@@ -96,7 +109,7 @@ const checkAdministrationAccess = (req, res, next) => {
 const mongoURI =
   "mongodb+srv://prashant:204060bde@cluster0.veh0f.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 mongoose
-  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(mongoURI, { serverSelectionTimeoutMS: 30000 })
   .then(() => console.log("Connected to MongoDB Atlas"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
@@ -108,11 +121,13 @@ User.updateMany({ regDate: { $exists: false } }, { $set: { regDate: new Date() }
   .then(() => console.log('RegDate added to users without it'))
   .catch(err => console.error('Error updating users:', err));
 
+
 // Complaint schema to handle user complaints
+
 const complaintSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  complaintNumber: { type: String, required: true },
-  ComplainantName: { type: String, required: true },
+  complaintNumberPrefix: { type: String, default: "CMP" },
+  complaintNumber: { type: Number, required: true, unique: true },  ComplainantName: { type: String, required: true },
   category: { type: String, required: true },
   urgency: { type: String, required: true },
   description: { type: String, required: true },
@@ -128,8 +143,8 @@ const complaintSchema = new mongoose.Schema({
     default: "Not Processed Yet",
   },
 });
-
-const Complaint = mongoose.model("Complaint", complaintSchema);
+complaintSchema.plugin(autoIncrement, { inc_field: 'complaintNumber', start_seq: 1 });
+// const Complaint = mongoose.model("Complaint", complaintSchema);
 module.exports = Complaint;
 
 
@@ -148,13 +163,27 @@ const upload = multer({ storage: storage });
 
 // Upload route for handling file uploads
 app.post('/upload', upload.single('file'), (req, res) => {
-  console.log(req.file);  // Check the uploaded file details
-  res.send('File uploaded successfully');
-});
+  if (!req.file) {
+      return res.status(400).send('No file uploaded.');
+  }
+  
+  console.log("Uploaded file details:", req.file);
+  
+  // Here you would typically save the complaint to the database.
+  const newComplaint = new Complaint({
+      userId: req.session.user._id, // Assuming user ID is stored in session
+      complaintNumber: '', // This will be auto-generated in pre-save hook
+      complainantName: req.session.user.username || "Unknown User",
+      description: "Description of the complaint", // Populate as needed
+      location: "Location of the complaint", // Populate as needed
+      file: req.file.filename,
+      regDate: new Date(),
+      status: "Not Processed Yet",
+  });
 
-app.post('/upload', upload.single('file'), (req, res) => {
-  console.log("Uploaded file path:", req.file.path);  // Log the file path
-  res.send('File uploaded successfully');
+  newComplaint.save()
+      .then(() => res.json({ message: 'File uploaded successfully', filePath: req.file.path }))
+      .catch(err => res.status(500).json({ message: 'Error saving complaint', error: err }));
 });
 
 
@@ -252,13 +281,37 @@ app.post("/login", async (req, res) => {
 
 
 // User Home Page
-app.get("/home", (req, res) => {
+// User Home Page
+app.get("/home", async (req, res) => {
   if (!req.session.user || req.session.user.role !== "user") {
-    return res.redirect("/login");
+      return res.redirect("/login");
   }
-  res.render(path.join(__dirname, "user", "views", "index"), {
-    user: req.session.user,
-  });
+
+  try {
+      const complaints = await Complaint.find()
+          .sort({ regDate: -1 })
+          .limit(10); // Fetch the most recent ten complaints
+
+      res.render(path.join(__dirname, "user", "views", "index"), {
+          user: req.session.user,
+          complaints: complaints,
+      });
+  } catch (error) {
+      console.error('Error fetching complaints:', error);
+      res.status(500).send('Error fetching complaints');
+  }
+});
+
+// Endpoint to get recent complaints (if needed separately)
+app.get('/api/complaints/recent', async (req, res) => {
+  try {
+      const complaints = await Complaint.find()
+          .sort({ regDate: -1 })
+          .limit(10); // Fetch the most recent ten complaints
+      res.json(complaints);
+  } catch (error) {
+      res.status(500).json({ message: 'Error fetching complaints' });
+  }
 });
 
 // Admin Home Page
@@ -315,12 +368,14 @@ app.get("/logout", (req, res) => {
     res.redirect("/login");
   });
 });
+
+
 // GET Route: Render the post-complaint page
 app.get("/post-complaint", async (req, res) => {
   if (!req.session.user) {
     return res.redirect("/login");
   }
-  
+ 
   try {
     const categories = await Category.find({});
     res.render("post-complaint", { categories }); // Pass categories to the template
@@ -330,90 +385,327 @@ app.get("/post-complaint", async (req, res) => {
   }
 });
 
-// POST Route: Handle complaint submission
-const { predictUrgency } = require('./ai/predict-urgency');
-app.post(
-  "/submit-complaint",
-  upload.single("file"),
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).render("post-complaint", {
-        success: false,
-        errors: errors.array(),
-        categories: await Category.find({}),
-      });
+// POST Route: Handle Complaint Submission
+app.post("/submit-complaint", upload.single("file"), async (req, res) => {
+  try {
+    const { category, description, location, latitude, longitude, mapLink } = req.body;
+    const userSession = req.session.user;
+
+    if (!userSession) {
+      return res.status(401).json({ success: false, message: "User not authenticated. Please log in." });
     }
 
+    // AI-based urgency detection
+    let urgencyResult;
     try {
-      const { category, description, location, latitude, longitude, mapLink } = req.body;
-      const userSession = req.session.user;
-
-      if (!userSession) {
-        return res.status(401).redirect("/login");
-      }
-
-      // AI-based urgency prediction with fallback
-      let urgency;
-      try {
-        urgency = await predictUrgency(description);
-      } catch (aiError) {
-        console.error("AI prediction failed, using fallback:", aiError);
-        urgency = 'Medium'; // Fallback value
-      }
-
-      const ComplainantName = `${userSession.first_name} ${userSession.last_name}`;
-      const complaintCount = await Complaint.countDocuments();
-      const complaintNumber = `CMP${complaintCount + 1}`;
-
-      const newComplaint = new Complaint({
-        userId: userSession.id,
-        complaintNumber,
-        ComplainantName,
-        category,
-        urgency, // Always set, either from AI or fallback
-        description,
-        location,
-        latitude,
-        longitude,
-        mapLink,
-        file: req.file ? req.file.filename : null,
-        regDate: new Date(),
-        status: "Not Processed Yet",
-      });
-
-      await newComplaint.save();
-
-      req.flash("success", "Complaint submitted successfully!");
-      res.redirect("/post-complaint");
-
-    } catch (error) {
-      console.error("Error submitting complaint:", error);
-      req.flash("error", "Error submitting complaint. Please try again.");
-      res.redirect("/post-complaint");
+      urgencyResult = urgencyDetector.getUrgencyLevel(description);
+    } catch (aiError) {
+      console.error("AI urgency detection failed, using fallback:", aiError);
+      urgencyResult = { level: "medium", priority: 2, responseTime: "72 hours", description: "Standard priority complaint." };
     }
+
+    console.log("Computed Urgency:", urgencyResult);
+
+    // Find nearest appropriate department
+    let departmentResult;
+    try {
+      departmentResult = await ComplaintRouter.routeComplaint({
+        category,
+        latitude,
+        longitude
+      });
+      console.log("Department Assignment:", departmentResult);
+    } catch (routingError) {
+      console.error("Department routing failed:", routingError);
+      departmentResult = null;
+    }
+
+    const complainantName = `${userSession.first_name} ${userSession.last_name}`;
+
+    // Get the latest complaint number
+    const lastComplaint = await Complaint.findOne().sort({ regDate: -1 }).select("complaintNumber");
+
+    // Extract the number from the last complaint (CMP1 -> 1)
+    let newComplaintNumber = 1;
+    if (lastComplaint && lastComplaint.complaintNumber) {
+      const lastNumber = parseInt(lastComplaint.complaintNumber.replace("CMP", ""), 10);
+      if (!isNaN(lastNumber)) {
+        newComplaintNumber = lastNumber + 1;
+      }
+    }
+
+    const complaintNumber = `CMP${newComplaintNumber}`;
+
+    // Create New Complaint with department assignment
+    const newComplaint = new Complaint({
+      userId: userSession.id,
+      complaintNumber,
+      complainantName,
+      category,
+      urgency: urgencyResult.level,
+      urgencyDetails: {
+        priority: urgencyResult.priority,
+        responseTime: urgencyResult.responseTime,
+        description: urgencyResult.description,
+      },
+      description,
+      location,
+      latitude,
+      longitude,
+      mapLink,
+      file: req.file ? req.file.filename : null,
+      regDate: new Date(),
+      status: departmentResult ? "Assigned" : "Not Processed Yet",
+      // Add department assignment if available
+      ...(departmentResult && {
+        assignedDepartment: {
+          id: departmentResult.department._id,
+          name: departmentResult.department.name,
+          type: departmentResult.department.type,
+          distance: departmentResult.distance
+        }
+      })
+    });
+
+    await newComplaint.save();
+
+    // Prepare response message
+    let responseMessage = `Complaint submitted successfully! Urgency Level: ${urgencyResult.level.toUpperCase()}`;
+    if (departmentResult) {
+      responseMessage += ` | Assigned to: ${departmentResult.department.name} (${departmentResult.distance.toFixed(2)} km away)`;
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: responseMessage,
+      complaintId: newComplaint._id,
+      urgencyLevel: newComplaint.urgency,
+      departmentAssignment: departmentResult ? {
+        name: departmentResult.department.name,
+        distance: departmentResult.distance,
+        type: departmentResult.department.type
+      } : null
+    });
+
+  } catch (error) {
+    console.error("Error submitting complaint:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while submitting the complaint.",
+      error: error.message,
+    });
   }
-);
+});
+
+// // services/complaintRouter.js
+// class ComplaintRouter {
+//   static async routeComplaint(complaint) {
+//       try {
+//           // Get department type for the complaint category
+//           const departmentType = Department.getDepartmentTypeForCategory(complaint.category);
+
+//           // Find nearest department of the required type
+//           const nearestDepartment = await Department.findNearest(
+//               [parseFloat(complaint.longitude), parseFloat(complaint.latitude)],
+//               departmentType
+//           );
+
+//           if (!nearestDepartment) {
+//               throw new Error(`No ${departmentType} department found within range`);
+//           }
+
+//           // Calculate distance using Haversine formula
+//           const distance = this.calculateDistance(
+//               complaint.latitude,
+//               complaint.longitude,
+//               nearestDepartment.location.coordinates[1],
+//               nearestDepartment.location.coordinates[0]
+//           );
+
+//           return {
+//               department: nearestDepartment,
+//               distance: distance // in kilometers
+//           };
+//       } catch (error) {
+//           console.error('Error routing complaint:', error);
+//           throw error;
+//       }
+//   }
+
+//   static calculateDistance(lat1, lon1, lat2, lon2) {
+//       const R = 6371; // Earth's radius in kilometers
+//       const dLat = this.toRad(lat2 - lat1);
+//       const dLon = this.toRad(lon2 - lon1);
+//       const a = 
+//           Math.sin(dLat/2) * Math.sin(dLat/2) +
+//           Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) * 
+//           Math.sin(dLon/2) * Math.sin(dLon/2);
+//       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+//       return R * c;
+//   }
+
+//   static toRad(value) {
+//       return value * Math.PI / 180;
+//   }
+// }
+
+// module.exports = ComplaintRouter;
 
 
-
-// Complaint history
+// Complaint history route
 app.get("/complaint-history", async (req, res) => {
   try {
+    // Check if user is authenticated
     if (!req.session.user) {
       return res.redirect("/login");
     }
 
+    // Retrieve categories dynamically from the database
+    const categories = await Category.find({}).lean();
+
+    // Retrieve complaints for the current user
     const complaints = await Complaint.find({ userId: req.session.user.id })
       .populate("userId", "first_name last_name email")
       .sort({ regDate: -1 });
 
-    res.render("complaint-history", { complaints });
+    // Format registration date to include time
+    complaints.forEach((complaint) => {
+      complaint.formattedDate = new Date(complaint.regDate).toLocaleString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      });
+    });
+
+    // Render the view with both complaints and categories
+    res.render("complaint-history", { complaints, categories });
   } catch (error) {
     console.error("Error fetching complaints:", error);
     res.status(500).send("Internal Server Error");
   }
 });
+
+// Load complaint details.
+app.get('/complaint/:id', async (req, res) => {
+  try {
+      const { id } = req.params;
+
+      // Check if ID is valid (MongoDB ObjectId format)
+      if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+          return res.status(400).json({ error: "Invalid complaint ID" });
+      }
+
+      const complaint = await Complaint.findById(id);
+      if (!complaint) {
+          return res.status(404).json({ error: "Complaint not found" });
+      }
+
+      res.json(complaint);
+  } catch (error) {
+      console.error("Error fetching complaint:", error);
+      res.status(500).json({ error: "Server error" });
+  }
+});
+
+// API to update complaint.
+app.put("/complaint/:id", upload.single("file"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { category, description, location, latitude, longitude, mapLink } = req.body;
+
+    // Recalculate urgency based on updated description
+    let urgencyResult;
+    try {
+      urgencyResult = urgencyDetector.getUrgencyLevel(description);
+    } catch (aiError) {
+      console.error("AI urgency detection failed, using fallback:", aiError);
+      urgencyResult = { level: "medium", priority: 2, responseTime: "72 hours", description: "Standard priority complaint." };
+    }
+    console.log("Recomputed Urgency:", urgencyResult);
+
+    // Re-route the complaint based on updated category and location
+    let departmentResult;
+    try {
+      departmentResult = await ComplaintRouter.routeComplaint({
+        category,
+        latitude,
+        longitude
+      });
+      console.log("Department Assignment:", departmentResult);
+    } catch (routingError) {
+      console.error("Department routing failed:", routingError);
+      departmentResult = null;
+    }
+
+    // Prepare updated fields (including recalculated urgency and department assignment)
+    const updatedFields = {
+      category,
+      description,
+      location,
+      latitude,
+      longitude,
+      mapLink,
+      urgency: urgencyResult.level,
+      urgencyDetails: {
+        priority: urgencyResult.priority,
+        responseTime: urgencyResult.responseTime,
+        description: urgencyResult.description
+      },
+      status: departmentResult ? "Assigned" : "Not Processed Yet"
+    };
+
+    if (departmentResult) {
+      updatedFields.assignedDepartment = {
+        id: departmentResult.department._id,
+        name: departmentResult.department.name,
+        type: departmentResult.department.type,
+        distance: departmentResult.distance
+      };
+    } else {
+      updatedFields.assignedDepartment = null;
+    }
+
+    // Handle file upload if a new file is provided
+    if (req.file) {
+      updatedFields.file = req.file.filename;
+    }
+
+    const updatedComplaint = await Complaint.findByIdAndUpdate(id, updatedFields, { new: true });
+
+    if (!updatedComplaint) {
+      return res.status(404).json({ error: "Complaint not found" });
+    }
+
+    res.json({ message: "Complaint updated", complaint: updatedComplaint });
+  } catch (error) {
+    console.error("Error updating complaint:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
+// API to delete complaint
+app.delete("/complaint/:id", async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const deletedComplaint = await Complaint.findByIdAndDelete(req.params.id);
+    if (!deletedComplaint) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    res.json({ message: "Complaint deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting complaint:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 // Dashboard route
 app.get("/dashboard", (req, res) => {
   if (!req.session.user) {
@@ -421,6 +713,7 @@ app.get("/dashboard", (req, res) => {
   }
   res.render("dashboard", { user: req.session.user });
 });
+
 // //
 // app.get("/user/dashboard", checkRole("user"), (req, res) => {
 //   // Render the user dashboard view

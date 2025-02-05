@@ -43,7 +43,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
+document.addEventListener('DOMContentLoaded', () => {
+    fetch('/api/complaints/recent')
+        .then(response => response.json())
+        .then(data => {
+            const complaintsContainer = document.getElementById('complaints-container');
+            complaintsContainer.innerHTML = '';
 
+            if (data.length === 0) {
+                complaintsContainer.innerHTML = '<p>No complaints yet.</p>';
+                return;
+            }
+
+            data.forEach(complaint => {
+                const complaintCard = document.createElement('div');
+                complaintCard.className = 'complaint-card';
+
+                complaintCard.innerHTML = `
+                    <h3 class="complaint-name">${complaint.complaintNumber}: ${complaint.description}</h3>
+                    <p class="complaint-details">${complaint.location} | ${new Date(complaint.regDate).toLocaleDateString()}</p>
+                    ${complaint.file ? `<img src="${complaint.file}" alt="${complaint.description}" class="complaint-file"/>` : ''}
+                    ${complaint.video ? `<video controls class="complaint-file"><source src="${complaint.video}" type="video/mp4"></video>` : ''}
+                    <p class="complaint-status">${complaint.status}</p>
+                `;
+                
+                complaintsContainer.appendChild(complaintCard);
+            });
+        })
+        .catch(error => console.error('Error fetching complaints:', error));
+});
 
 
 

@@ -36,102 +36,73 @@
           </div>
         </div>
 
-    <!-- Post a Complaint Section -->
-    <main class="post-complaint">
-        <h2>Post a Complaint</h2>
-        <!-- Success Message (to be displayed dynamically) -->
-        <div id="success-message"></div>
-        <form action="/submit-complaint" method="POST" id="complaint-form" enctype="multipart/form-data">
-            <!-- Complaint Category -->
-            <div class="form-group">
-                <label for="category">Complaint Category</label>
-                <select id="category" name="category" required>
-                    <% if (categories && categories.length) { %>
-                        <% categories.forEach(category => { %>
-                            <option value="<%= category.name %>"><%= category.name %></option>
-                        <% }); %>
-                    <% } else { %>
-                        <option>No categories available</option>
-                    <% } %>
-                </select>
-            </div>
-
-            <td>
-                <span class="urgency-<%= complaint.urgency.toLowerCase() %>">
-                  <%= complaint.urgency %>
-                </span>
-              </td>
-            
-            <!-- Complaint Description -->
-            <div class="form-group">
-                <label for="description">Complaint Description</label>
-                <textarea id="description" name="description" rows="5" required placeholder="Describe your complaint..."></textarea>
-            </div>
-
-            <!-- Location Section -->
-            <div class="form-group">
-                <label for="location">Location Name</label>
-                <input type="text" id="location" name="location" placeholder="Select location from the map" required>
-                <div id="map" style="height: 400px; width: 100%;"></div>
-            </div>
-
-            <!-- Hidden fields for latitude, longitude, and map link -->
-            <input type="hidden" id="latitude" name="latitude">
-            <input type="hidden" id="longitude" name="longitude">
-            <input type="hidden" id="mapLink" name="mapLink">
-
-            <!-- File Upload -->
-            <div class="form-group">
-                <label for="file">Upload Image/Video</label>
-                <input type="file" id="file" name="file" accept="image/*, video/*">
-            </div>
-
-            <!-- Submit Button -->
-            <div class="form-group">
-                <button type="submit" class="submit-btn">Submit Complaint</button>
-            </div>
-        </form>
-    </main>
-   
+   <!-- Post a Complaint Section -->
+   <main class="post-complaint">
+    <h2>Post a Complaint</h2>
+    
+    <!-- Flash or Success Message Display -->
+    <div id="success-message"></div>
+    
+    <form action="/submit-complaint" method="POST" id="complaint-form" enctype="multipart/form-data">
+      <!-- Complaint Category -->
+      <div class="form-group">
+        <label for="category">Complaint Category</label>
+        <select id="category" name="category" required>
+          <% if (categories && categories.length) { %>
+            <% categories.forEach(category => { %>
+              <option value="<%= category.name %>"><%= category.name %></option>
+            <% }); %>
+          <% } else { %>
+            <option>No categories available</option>
+          <% } %>
+        </select>
+      </div>
       
+      <!-- Complaint Description with Live Urgency Indicator (for feedback only) -->
+      <div class="form-group">
+        <label for="description">Complaint Description</label>
+        <textarea id="description" name="description" rows="5" required placeholder="Describe your complaint..."></textarea>
+        <div id="urgency-preview" class="urgency-preview">
+          <span class="urgency-label">Estimated Urgency:</span>
+          <span id="urgency-indicator" class="urgency-medium">Medium</span>
+          <span id="response-time">Expected Response: 72 hours</span>
+        </div>
+      </div>
+      
+      <!-- Location Section -->
+      <div class="form-group">
+        <label for="location">Location Name</label>
+        <!-- This field is auto-filled via reverse geocoding -->
+        <input type="text" id="location" name="location" placeholder="Selected location" readonly required>
+      </div>
+      
+      <!-- Map Container -->
+      <div id="map"></div>
+      
+      <!-- Hidden Fields to store coordinates and map link -->
+      <input type="hidden" id="latitude" name="latitude">
+      <input type="hidden" id="longitude" name="longitude">
+      <input type="hidden" id="mapLink" name="mapLink">
+      
+      <!-- File Upload with Preview -->
+      <div class="form-group">
+        <label for="file">Upload Image/Video</label>
+        <input type="file" id="file" name="file" accept="image/*, video/*">
+        <div id="file-preview" class="file-preview"></div>
+      </div>
+      
+      <!-- Submit Button -->
+      <div class="form-group">
+        <button type="submit" class="submit-btn">Submit Complaint</button>
+      </div>
+    </form>
+    
+    <!-- Display server-determined urgency after submission -->
+    <div id="urgencyDisplay"></div>
+  </main>
 
-    <!-- Leaflet JS for the map -->
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script>
-        // Initialize the map
-        const map = L.map("map").setView([27.7172, 85.3240], 13); // Default to Kathmandu
-
-        // Add OpenStreetMap tiles
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
-        // Add a marker with drag functionality
-        const marker = L.marker([27.7172, 85.3240], { draggable: true }).addTo(map);
-
-        // Update hidden fields when the marker is dragged or the map is clicked
-        function updateLocation(lat, lng) {
-            document.getElementById("latitude").value = lat;
-            document.getElementById("longitude").value = lng;
-
-            // Generate a map link for Google Maps
-            const mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
-            document.getElementById("mapLink").value = mapLink;
-        }
-
-        marker.on("dragend", function (e) {
-            const latLng = e.target.getLatLng();
-            updateLocation(latLng.lat, latLng.lng);
-        });
-
-        map.on("click", function (e) {
-            const latLng = e.latlng;
-            marker.setLatLng(latLng);
-            updateLocation(latLng.lat, latLng.lng);
-        });
-
-        // Initial location update
-        updateLocation(27.7172, 85.3240);
-    </script>
+ <!-- Leaflet JS for the map -->
+ <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+ 
 </body>
 </html>

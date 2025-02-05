@@ -117,8 +117,31 @@ body {
 
 
 
-
-
+.feeds-section {
+    padding: 20px;
+  }
+  
+  .complaint-card {
+    border: 1px solid #ccc;
+    margin-bottom: 20px;
+    padding: 10px;
+  }
+  
+  .complaint-name {
+    font-size: 24px;
+  }
+  
+  .complaint-details {
+    font-size: smaller;
+  }
+  
+  .complaint-file {
+    width: 100%; /* Adjust as needed */
+  }
+  
+  .complaint-status {
+    margin-top: 10px;
+  }
 
 
 

@@ -1,12 +1,17 @@
-const tf = require('@tensorflow/tfjs');
+// const tf = require('@tensorflow/tfjs-node')
 const natural = require('natural');
+const path = require('path');
 const { preprocessText } = require('./text-preprocessor');
 
 let model;
 let tfidf;
 
 async function loadModel() {
-  model = await tf.loadLayersModel('file://./ai/model/model.json');
+  const modelPath = path.resolve(__dirname, 'ai/model/model.json'); // ✅ Absolute path
+  console.log("Loading model from:", `file://${modelPath}`); // Debugging line
+
+  model = await tf.loadLayersModel(`file://${modelPath}`); // ✅ Correct file path format
+
   // Initialize TF-IDF with training data vocabulary
   const trainingData = require('./training-data');
   tfidf = new natural.TfIdf();
@@ -30,7 +35,7 @@ async function predictUrgency(complaintText) {
   const values = await prediction.data();
   const urgencyIndex = values.indexOf(Math.max(...values));
   
-  return ['High', 'Medium', 'Low'][urgencyIndex];
+  return ['Critical','High', 'Medium', 'Low'][urgencyIndex];
 }
 
 module.exports = { predictUrgency };

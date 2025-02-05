@@ -103,6 +103,13 @@ body {
     display: block;
 }
 
+/* Title styling */
+h2 {
+    color: #2a7ce6;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 40px;
+}
 
 /* Dashboard Styling */
 .dashboard-container {

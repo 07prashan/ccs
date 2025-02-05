@@ -6,7 +6,6 @@
   <title>Capital Complaint System</title>
   <link rel="stylesheet" href="/css/index.css">
   <script src="js/index.js" defer></script>
-  
 </head>
 <body>
 
@@ -23,26 +22,42 @@
       <a href="/post-complaint">Post a Complaint</a>
       <a href="/Complaint-history">Complaint History</a>
       <a href="#contact-us">Contact Us</a>
-  </nav>
+    </nav>
     <div class="profile-container">
       <div class="dropdown">
         <button class="dropbtn">Menu</button>
         <div class="dropdown-content">
-            <a href="/settings">Settings</a>
-            <a href="#help">Profile</a>
-            <a href="/logout">Logout</a>
+          <a href="/settings">Settings</a>
+          <a href="#help">Profile</a>
+          <a href="/logout">Logout</a>
         </div>
-    </div>
+      </div>
     </div>
   </div>
 
-  <!-- Main Content -->
   <main class="feeds-section">
     <h2>Recent Complaints</h2>
     <div id="complaints-container">
-      <!-- Complaints dynamically loaded here -->
-      <p>No complaints yet.</p>
+        <% if (complaints.length > 0) { %>
+            <% complaints.forEach(complaint => { %>
+                <div class="complaint-card">
+                    <h3 class="complaint-name"><%= complaint.complaintNumber %>: <%= complaint.description %></h3>
+                    <p class="complaint-details"><%= complaint.location %> | <%= new Date(complaint.regDate).toLocaleDateString() %></p>
+                    <% if (complaint.file) { %>
+                        <img src="/uploads/<%= complaint.file %>" alt="<%= complaint.description %>" class="complaint-file" loading="lazy" />
+                    <% } else { %>
+                        <p>No image available.</p>
+                    <% } %>
+                    <p class="complaint-status"><%= complaint.status %></p>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <p>No complaints yet.</p>
+        <% } %>
     </div>
   </main>
+  
+
+  
 </body>
 </html>
