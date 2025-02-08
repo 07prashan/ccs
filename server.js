@@ -1,56 +1,32 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 const path = require("path");
+const app = express();
+const fs = require('fs');
+const uploadsPath = path.join(__dirname, 'uploads');
 // const Department = require('./models/department');
 // const ComplaintRouter = require('./services/complaintRouter');
+const {Complaint}  = require("./models/complaint");
+const User = require('./models/User'); 
+const Category = require('./models/Category');
+const UrgencyDetector = require('./ai/urgencyDetection');
 const session = require("express-session");
 const MongoStore = require('connect-mongo');
 const multer = require("multer");
 const { body, validationResult } = require("express-validator"); // Importing express-validator
-const app = express();
 const flash = require("connect-flash");
-const fs = require('fs');
 const autoIncrement = require('mongoose-sequence')(mongoose);
 const router = express.Router();
-const { Complaint } = require("./models/complaint");
 const { createComplaintNumber } = require("./models/complaint");
-const Category = require('./models/Category');  // Add this ONCE at the top with other requires
-// const User = require('../models/User'); // Import User model
-const UrgencyDetector = require('./ai/urgencyDetection');
+
 const urgencyDetector = new UrgencyDetector();
 const { predictUrgency } = require('./ai/predict-urgency');
-// Middleware
-app.use(express.json());
-// Configure flash messages
-app.use(flash());
-app.use(bodyParser.urlencoded({ extended: true }));
-// Middleware to process urgency level
-const processUrgency = (req, res, next) => {
-  if (req.body.description) {
-      const urgencyResult = urgencyDetector.getUrgencyLevel(req.body.description);
-      req.body.urgency = urgencyResult;
-  }
-  next();
-};
-// Set up static file directories for each role
-app.use(express.static(path.join(__dirname, "user", "public")));
-app.use("/admin", express.static(path.join(__dirname, "admin", "public")));
-app.use('/admin/public', express.static(path.join(__dirname, 'admin', 'public')));
-app.use('/administration/public', express.static(path.join(__dirname, 'administration','public')));
-// Serve static files from the 'uploads' directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Set up the view engine to use EJS for rendering
-app.set("view engine", "ejs");
 
-const uploadsDirectory = path.join(__dirname, 'uploads');
-app.set("views", [
-  path.join(__dirname, "user", "views"),
-  path.join(__dirname, "admin", "views"),
-  path.join(__dirname, "administration", "views"),
-]);
+
+
 // Session configuration
 app.use(
   session({
@@ -69,13 +45,83 @@ app.use(
   })
 );
 
-// Authentication middleware
-const isAuthenticated = (req, res, next) => {
-  if (!req.session.user) {
-    return res.redirect('/login');
+// MongoDB Connection
+const mongoURI =
+  "mongodb+srv://prashant:204060bde@cluster0.veh0f.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+mongoose
+  .connect(mongoURI, { serverSelectionTimeoutMS: 30000 })
+  .then(() => console.log("Connected to MongoDB Atlas"))
+  .catch((err) => console.error("MongoDB connection error:", err));
+
+// Middleware
+app.use(express.json());
+// Configure flash messages
+app.use(flash());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Set up static file directories for each role
+app.use(express.static(path.join(__dirname, "user", "public")));
+app.use("/admin", express.static(path.join(__dirname, "admin", "public")));
+app.use('/admin/public', express.static(path.join(__dirname, 'admin', 'public')));
+app.use('/administration/public', express.static(path.join(__dirname, 'administration','public')));
+// Set up the view engine to use EJS for rendering
+app.set("view engine", "ejs");
+
+const uploadsDirectory = path.join(__dirname, 'uploads');
+app.set("views", [
+  path.join(__dirname, "user", "views"),
+  path.join(__dirname, "admin", "views"),
+  path.join(__dirname, "administration", "views"),
+]);
+
+//Authenticate middleware
+function isAuthenticated(req, res, next) {
+  console.log('Session data:', req.session);  // Add this
+  if (req.session && req.session.user && req.session.user.id) {
+      console.log('User is authenticated');  // Add this
+      next();
+  } else {
+      console.log('User is not authenticated');  // Add this
+      res.redirect('/login');
   }
+}
+// Log middleware to track file requests
+app.use('/uploads', (req, res, next) => {
+  console.log('Accessing:', req.url);
   next();
-};
+});
+
+app.use('/uploads', express.static(uploadsPath));
+
+// Static file serving middleware
+app.use('/uploads', express.static(uploadsPath, {
+  setHeaders: (res, filePath) => {
+      console.log('Serving file:', filePath);
+      // Set appropriate content type based on file extension
+      const ext = path.extname(filePath).toLowerCase();
+      switch (ext) {
+          case '.jpg':
+          case '.jpeg':
+              res.set('Content-Type', 'image/jpeg');
+              break;
+          case '.png':
+              res.set('Content-Type', 'image/png');
+              break;
+          case '.mp4':
+              res.set('Content-Type', 'video/mp4');
+              break;
+      }
+  }
+}));
+
+// Error handling middleware for uploads
+app.use('/uploads', (err, req, res, next) => {
+  console.error('Upload route error:', err);
+  res.status(404).send('File not found');
+});
+
+
+
 
 // Role-based middleware
 const checkAdmin = (req, res, next) => {
@@ -105,47 +151,64 @@ const checkAdministrationAccess = (req, res, next) => {
   }
   next();
 };
-// MongoDB Connection
-const mongoURI =
-  "mongodb+srv://prashant:204060bde@cluster0.veh0f.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-mongoose
-  .connect(mongoURI, { serverSelectionTimeoutMS: 30000 })
-  .then(() => console.log("Connected to MongoDB Atlas"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+
+
+// Middleware to process urgency level
+const processUrgency = (req, res, next) => {
+  if (req.body.description) {
+      const urgencyResult = urgencyDetector.getUrgencyLevel(req.body.description);
+      req.body.urgency = urgencyResult;
+  }
+  next();
+};
+
+
+
 
 // Schema and Models
-const User = require('./models/User'); // Import User model
+
 // Update users without a regDate
-// const User = mongoose.model("User", userSchema); // Compile the user model
 User.updateMany({ regDate: { $exists: false } }, { $set: { regDate: new Date() } })
   .then(() => console.log('RegDate added to users without it'))
   .catch(err => console.error('Error updating users:', err));
 
+// // Define the User schema
+// const userSchema = new mongoose.Schema({
+//   first_name: { type: String, required: true },
+//   last_name: { type: String, required: true },
+//   email: { type: String, unique: true, required: true },
+//   contact_no: { type: String, unique: true, required: true },
+//   password: { type: String, required: true },
+//   role: { type: String, enum: ["user", "admin", "administrative"], default: "user" },
+//   regDate: { type: Date, default: Date.now },
+// });
 
-// Complaint schema to handle user complaints
 
-const complaintSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  complaintNumberPrefix: { type: String, default: "CMP" },
-  complaintNumber: { type: Number, required: true, unique: true },  ComplainantName: { type: String, required: true },
-  category: { type: String, required: true },
-  urgency: { type: String, required: true },
-  description: { type: String, required: true },
-  location: { type: String, required: true }, // Name of the location
-  latitude: { type: Number, required: true }, // Latitude of the location
-  longitude: { type: Number, required: true }, // Longitude of the location
-  mapLink: { type: String, required: true }, // Direct map link
-  file: { type: String },
-  regDate: { type: Date, default: Date.now },
-  status: {
-    type: String,
-    enum: ["Not Processed Yet", "In Process", "Closed Complaint"],
-    default: "Not Processed Yet",
-  },
-});
-complaintSchema.plugin(autoIncrement, { inc_field: 'complaintNumber', start_seq: 1 });
-// const Complaint = mongoose.model("Complaint", complaintSchema);
-module.exports = Complaint;
+
+// // Complaint schema to handle user complaints
+
+// const complaintSchema = new mongoose.Schema({
+//   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+//   complaintNumberPrefix: { type: String, default: "CMP" },
+//   complaintNumber: { type: Number, required: true, unique: true },  ComplainantName: { type: String, required: true },
+//   category: { type: String, required: true },
+//   urgency: { type: String, required: true },
+//   description: { type: String, required: true },
+//   location: { type: String, required: true }, // Name of the location
+//   latitude: { type: Number, required: true }, // Latitude of the location
+//   longitude: { type: Number, required: true }, // Longitude of the location
+//   mapLink: { type: String, required: true }, // Direct map link
+//   file: { type: String },
+//   regDate: { type: Date, default: Date.now },
+//   status: {
+//     type: String,
+//     enum: ["Not Processed Yet", "In Process", "Closed Complaint"],
+//     default: "Not Processed Yet",
+//   },
+// });
+// complaintSchema.plugin(autoIncrement, { inc_field: 'complaintNumber', start_seq: 1 });
+// // const Complaint = mongoose.model("Complaint", complaintSchema);
+// module.exports = Complaint;
 
 
 // Define storage engine for multer
@@ -162,30 +225,47 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Upload route for handling file uploads
+
 app.post('/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
+  try {
+    if (!req.file) {
       return res.status(400).send('No file uploaded.');
-  }
-  
-  console.log("Uploaded file details:", req.file);
-  
-  // Here you would typically save the complaint to the database.
-  const newComplaint = new Complaint({
-      userId: req.session.user._id, // Assuming user ID is stored in session
-      complaintNumber: '', // This will be auto-generated in pre-save hook
-      complainantName: req.session.user.username || "Unknown User",
-      description: "Description of the complaint", // Populate as needed
-      location: "Location of the complaint", // Populate as needed
+    }
+   
+    console.log("Full upload details:", {
+      originalname: req.file.originalname,
+      filename: req.file.filename,
+      path: req.file.path,
+      size: req.file.size
+    });
+
+    const newComplaint = new Complaint({
+      userId: req.session.user._id,
+      description: req.body.description,
+      location: req.body.location,
       file: req.file.filename,
-      regDate: new Date(),
-      status: "Not Processed Yet",
-  });
+      // Add other required fields
+    });
 
-  newComplaint.save()
-      .then(() => res.json({ message: 'File uploaded successfully', filePath: req.file.path }))
-      .catch(err => res.status(500).json({ message: 'Error saving complaint', error: err }));
+    newComplaint.save()
+      .then(savedComplaint => {
+        res.json({ 
+          message: 'File uploaded successfully', 
+          complaint: savedComplaint 
+        });
+      })
+      .catch(err => {
+        console.error("Complaint save error:", err);
+        res.status(500).json({ 
+          message: 'Error saving complaint', 
+          error: err.message 
+        });
+      });
+  } catch (error) {
+    console.error("Upload route error:", error);
+    res.status(500).send('Server error during upload');
+  }
 });
-
 
 
 
@@ -196,13 +276,13 @@ app.post('/upload', upload.single('file'), (req, res) => {
 app.get("/signup", (req, res) => {
   res.render("signup");
 });
-
 // Login page
 app.get("/login", (req, res) => {
   res.render("login");
 });
 
-// Signup route to register new users
+
+// Sign-Up route
 app.post(
   "/signup",
   body("email").isEmail().withMessage("Please enter a valid email address"),
@@ -218,7 +298,8 @@ app.post(
     const { first_name, last_name, contact_no, email, password } = req.body;
 
     try {
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const trimmedPassword = password.trim(); // Trim whitespace before hashing
+      const hashedPassword = await bcrypt.hash(trimmedPassword, 10);
       const newUser = new User({
         first_name,
         last_name,
@@ -226,6 +307,7 @@ app.post(
         email,
         password: hashedPassword,
       });
+      console.log('Hashed Password during Sign-Up:', hashedPassword); // Log to check
 
       await newUser.save();
       res.redirect("/login"); // Redirect to login after successful signup
@@ -236,27 +318,28 @@ app.post(
   }
 );
 
-
-
-// Login route to authenticate users
+// Login route
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
-
   try {
-    // Find the user based on the provided email
     const user = await User.findOne({ email });
-
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Compare the entered password with the hashed password stored in the database
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+    const trimmedPassword = password.trim();
+    // console.log('Login attempt details:');
+    // console.log('Input password (trimmed):', trimmedPassword);
+    // console.log('Stored hash version:', user.password.substring(0, 4));
+    const isMatch = await bcrypt.compare(trimmedPassword, user.password);
+    // console.log('Password match result:', isMatch);
+    // If login successful but using old hash format, update to new format
+    if (isMatch && user.password.startsWith('$2a$')) {
+      const newHash = await bcrypt.hash(trimmedPassword, 10);
+      await User.updateOne({ _id: user._id }, { password: newHash });
     }
 
-    // Store the relevant user information in the session
+    // Store session data
     req.session.user = {
       id: user._id,
       first_name: user.first_name,
@@ -265,22 +348,24 @@ app.post("/login", async (req, res) => {
       role: user.role,
     };
 
-    // Redirect based on the user's role
+    // Redirect user based on role
     if (user.role === "admin") {
-      res.redirect("/admin/home");
+      return res.redirect("/admin/home");
     } else if (user.role === "administrative") {
-      res.redirect("/administration/home");
+      return res.redirect("/administration/home");
     } else {
-      res.redirect("/home");
+      return res.redirect("/home");
     }
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ message: "Error logging in", error: err.message });
+    res.status(500).json({ message: "Error logging in" });
   }
 });
 
 
-// User Home Page
+
+
+
 // User Home Page
 app.get("/home", async (req, res) => {
   if (!req.session.user || req.session.user.role !== "user") {
@@ -290,11 +375,21 @@ app.get("/home", async (req, res) => {
   try {
       const complaints = await Complaint.find()
           .sort({ regDate: -1 })
-          .limit(10); // Fetch the most recent ten complaints
+          .limit(10);
+
+      // Add debug information
+      const complaintsWithDebug = complaints.map(complaint => {
+          if (complaint.file) {
+              const filePath = path.join(__dirname, 'uploads', complaint.file);
+              console.log(`Checking file: ${filePath}`);
+              console.log(`File exists: ${fs.existsSync(filePath)}`);
+          }
+          return complaint;
+      });
 
       res.render(path.join(__dirname, "user", "views", "index"), {
           user: req.session.user,
-          complaints: complaints,
+          complaints: complaintsWithDebug,
       });
   } catch (error) {
       console.error('Error fetching complaints:', error);
@@ -780,38 +875,91 @@ app.get("/complaint-details/:id", async (req, res) => {
 });
 
 
+// Route to serve Contact Us page
+app.get("/contact-us", (req, res) => {
+  res.render("contact-us");
+});
+
+
+// Profile Route
+app.get('/profile', isAuthenticated, async (req, res) => {
+  try {
+    const userSession = req.session.user || req.session.admin || req.session.administration;
+    if (!userSession) return res.redirect('/login');
+
+    // Fetch user details from database
+    const user = await User.findById(userSession.id);
+    if (!user) return res.redirect('/login');
+
+    // Construct complainantName
+    const complainantName = `${user.first_name} ${user.last_name}`;
+
+    // Count complaints submitted by the user
+    const complaintCount = await Complaint.countDocuments({ complainantName });
+
+    // Determine profile view path
+    let profilePage = path.join(__dirname, 'user/views/profile.ejs'); // Default
+
+    if (userSession.role === "admin") {
+      profilePage = path.join(__dirname, 'admin/views/profile.ejs');
+    } else if (userSession.role === "administrative") {
+      profilePage = path.join(__dirname, 'administration/views/profile.ejs');
+    }
+
+    console.log(`Rendering profile page for role: ${userSession.role}`);
+
+    // Render the correct profile page
+    return res.render(profilePage, {
+      user: {
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        contactNo: user.contact_no,
+        role: user.role,
+        regDate: user.regDate,
+        complaintCount
+      }
+    });
+  } catch (error) {
+    console.error('Error loading profile:', error);
+    res.status(500).send('Server Error');
+  }
+});
+
+
+
+
+
+
+
 // User settings route
 app.get('/settings', (req, res) => {
   console.log('Full Session:', req.session);
-  
-  // Specific role-based checks
-  if (req.session && req.session.user) {
-    console.log('User Session Found');
-    return res.render(path.join(__dirname, 'user/views/settings.ejs'), { 
-      user: req.session.user 
-    });
+
+  const userSession = req.session.user || req.session.admin || req.session.administration;
+
+  if (!userSession) {
+    console.log('No Valid Session');
+    return res.redirect('/login');
   }
-  
-  if (req.session && req.session.admin) {
-    console.log('Admin Session Found');
-    return res.render(path.join(__dirname, 'admin/views/settings.ejs'), { 
-      admin: req.session.admin 
-    });
+
+  // Determine which settings page to render based on role
+  let settingsPage = 'user/views/settings.ejs'; // Default to user settings
+  if (userSession.role === "admin") {
+    settingsPage = 'admin/views/settings.ejs';
+  } else if (userSession.role === "administrative") {
+    settingsPage = 'administration/views/settings.ejs';
   }
-  
-  if (req.session && req.session.administration) {
-    console.log('Administration Session Found');
-    return res.render(path.join(__dirname, 'administration/views/settings.ejs'), { 
-      administration: req.session.administration 
-    });
-  }
-  
-  console.log('No Valid Session');
-  res.redirect('/login');
+
+  console.log(`Rendering settings for role: ${userSession.role}`);
+  return res.render(path.join(__dirname, settingsPage), { user: userSession });
 });
 // Password change route
 app.post("/change-password", async (req, res) => {
-  if (!req.session.user) {
+  // Check if any valid session exists
+  const userSession = req.session.user || req.session.admin || req.session.administration;
+
+  if (!userSession) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
   }
 
@@ -833,7 +981,7 @@ app.post("/change-password", async (req, res) => {
     });
   }
 
-  // Check password complexity (optional but recommended)
+  // Check password complexity
   if (newPassword.length < 6) {
     return res.status(400).json({ 
       success: false, 
@@ -843,7 +991,7 @@ app.post("/change-password", async (req, res) => {
 
   try {
     // Find the user in the database
-    const user = await User.findById(req.session.user.id);
+    const user = await User.findById(userSession.id);
 
     if (!user) {
       return res.status(404).json({ 
@@ -881,6 +1029,7 @@ app.post("/change-password", async (req, res) => {
     });
   }
 });
+
 
 
 
@@ -1189,9 +1338,9 @@ app.post("/admin/update-role/:id", async (req, res) => {
 // Fetch Complaints for a User
 app.get("/admin/user-complaints/:id", async (req, res) => {
   try {
-      // Fetch complaints and populate userId to get first_name and last_name
+      // Fetch complaints and populate userId to get first_name andnlast_name
       const complaints = await Complaint.find({ userId: req.params.id })
-        .populate('userId', 'first_name last_name'); // Populate the user's first_name and last_name
+        .populate('userId', 'first_name last_name'); // Populate the user's first_name andnlast_name
 
       // Extract relevant data and add complainantName field
       const complaintData = complaints.map(c => ({
@@ -1216,7 +1365,7 @@ app.get('/admin/all-complaints', async (req, res) => {
   try {
     // Fetch all complaints and populate the userId to get complainant name
     const complaints = await Complaint.find()
-      .populate('userId', 'first_name last_name'); // Populate userId with first_name and last_name
+      .populate('userId', 'first_name last_name'); // Populate userId with first_name andnlast_name
 
     // Convert regDate to Date object and add complainant name
     complaints.forEach(complaint => {
@@ -1385,10 +1534,9 @@ app.get('/admin/complaints-report', async (req, res) => {
 
 //search user
 app.get('/admin/search-user', async (req, res) => {
-  const searchQuery = req.query.searchQuery;
+  const searchQuery = req.query.searchQuery || ''; // Get the search query from the URL query parameter
 
   try {
-    const searchQuery = req.query.searchQuery || ''; // Get the search query from the URL query parameter
     let users = [];
 
     if (searchQuery) {
@@ -1403,6 +1551,12 @@ app.get('/admin/search-user', async (req, res) => {
       });
     }
 
+    // Check if the request expects JSON
+    if (req.headers.accept === 'application/json') {
+      return res.json({ users });
+    }
+
+    // If not an AJAX request, render the search-user page normally
     res.render('search-user', { users });
 
   } catch (error) {
@@ -1410,6 +1564,7 @@ app.get('/admin/search-user', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 // Routes
 app.get('/admin/search-complaints', async (req, res) => {

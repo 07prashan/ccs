@@ -21,14 +21,14 @@
       <a href="/dashboard">Dashboard</a>
       <a href="/post-complaint">Post a Complaint</a>
       <a href="/Complaint-history">Complaint History</a>
-      <a href="#contact-us">Contact Us</a>
+      <a href="/contact-us">Contact Us</a>
     </nav>
     <div class="profile-container">
       <div class="dropdown">
         <button class="dropbtn">Menu</button>
         <div class="dropdown-content">
           <a href="/settings">Settings</a>
-          <a href="#help">Profile</a>
+          <a href="/profile">Profile</a>
           <a href="/logout">Logout</a>
         </div>
       </div>
@@ -40,16 +40,23 @@
     <div id="complaints-container">
         <% if (complaints.length > 0) { %>
             <% complaints.forEach(complaint => { %>
-                <div class="complaint-card">
-                    <h3 class="complaint-name"><%= complaint.complaintNumber %>: <%= complaint.description %></h3>
-                    <p class="complaint-details"><%= complaint.location %> | <%= new Date(complaint.regDate).toLocaleDateString() %></p>
-                    <% if (complaint.file) { %>
-                        <img src="/uploads/<%= complaint.file %>" alt="<%= complaint.description %>" class="complaint-file" loading="lazy" />
-                    <% } else { %>
-                        <p>No image available.</p>
-                    <% } %>
-                    <p class="complaint-status"><%= complaint.status %></p>
-                </div>
+              <div class="complaint-card">
+                <h3 class="complaint-name"><%= complaint.complaintNumber %>: <%= complaint.description %></h3>
+                <p class="complaint-details"><%= complaint.location %> | <%= new Date(complaint.regDate).toLocaleDateString() %></p>
+                <% if (complaint.file) { %>
+                  <div class="complaint-image-container">
+                      <!-- Debug info -->
+                      <small style="color: gray;">Debug: <%= complaint.file %></small>
+                      <img 
+                          src="/uploads/<%= complaint.file %>" 
+                          alt="Complaint Image"
+                          style="max-width: 100%; height: auto; margin: 10px 0;"
+                          onerror="this.style.display='none'; console.error('Failed to load:', this.src);"
+                      >
+                  </div>
+              <% } %>
+                <p class="complaint-status"><%= complaint.status %></p>
+            </div>
             <% }); %>
         <% } else { %>
             <p>No complaints yet.</p>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile</title>
+  <link rel="stylesheet" href="/css/profile.css">
+  <script src="js/profile.js" defer></script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <h1 class="main-title">Capital Complaint System</h1>
+  </header>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <nav>
+      <a href="/home">Home</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/post-complaint">Post a Complaint</a>
+      <a href="/Complaint-history">Complaint History</a>
+      <a href="/contact-us">Contact Us</a>
+    </nav>
+    <div class="profile-container">
+      <div class="dropdown">
+        <button class="dropbtn">Menu</button>
+        <div class="dropdown-content">
+          <a href="/settings">Settings</a>
+          <a href="/profile">Profile</a>
+          <a href="/logout">Logout</a>
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- Profile Content -->
+<div class="container">
+    <div class="profile-card">
+      <h2>User Profile</h2>
+      <div class="profile-details">
+        <p><strong>Username:</strong><%= user.first_name %> <%= user.last_name %></p> <!-- Correct field names -->
+      <p><strong>Email:</strong> <%= user.email %></p>
+      <p><strong>Contact Number:</strong> <%= user.contactNo %></p> <!-- Correct field names -->
+      <p><strong>Registered On:</strong> <%= user.regDate.toLocaleDateString() %></p>
+      <p><strong>Total Complaints Submitted:</strong> <%= user.complaintCount %></p>
+      <p><strong>Role:</strong> <%= user.role %></p>
+      </div>
+    </div>
+  </div>
+  
+</body>
+</html>

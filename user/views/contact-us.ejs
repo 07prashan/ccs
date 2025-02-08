@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capital Complaint System</title>
+  <link rel="stylesheet" href="/css/contact-us.css">
+  <script src="js/contact-us.js" defer></script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <h1 class="main-title">Capital Complaint System</h1>
+  </header>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <nav>
+      <a href="/home">Home</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/post-complaint">Post a Complaint</a>
+      <a href="/Complaint-history">Complaint History</a>
+      <a href="/contact-us">Contact Us</a>
+    </nav>
+    <div class="profile-container">
+      <div class="dropdown">
+        <button class="dropbtn">Menu</button>
+        <div class="dropdown-content">
+          <a href="/settings">Settings</a>
+          <a href="/profile">Profile</a>
+          <a href="/logout">Logout</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <h1>Contact Us</h1>
+    <p>If you have any complaints, concerns, or queries, feel free to contact the relevant department below.</p>
+
+    <h2>Admin Contact</h2>
+    <div class="contact-card">
+        <p><strong>Email:</strong> admin@ccs.com</p>
+        <p><strong>Phone:</strong> +977-9800000001</p>
+        <p><strong>Office Address:</strong> Kathmandu, Nepal</p>
+    </div>
+
+    <h2>Public Services Contacts</h2>
+    
+    <div class="admin-contacts">
+        <!-- Water Supply Offices -->
+        <h3>Water Supply Offices</h3>
+        <div class="contact-card">
+            <p><strong>Email:</strong> water@ccs.com</p>
+            <p><strong>Phone:</strong> +977-9800000002</p>
+            <p><strong>Office Address:</strong> New Road, Kathmandu</p>
+        </div>
+
+        <div class="contact-card">
+            <h3>Waste Management</h3>
+            <p><strong>Email:</strong> waste@ccs.com</p>
+            <p><strong>Phone:</strong> +977-9800000003</p>
+            <p><strong>Office Address:</strong> Baneshwor, Kathmandu</p>
+        </div>
+
+        <div class="contact-card">
+            <h3>Road & Infrastructure</h3>
+            <p><strong>Email:</strong> road@ccs.com</p>
+            <p><strong>Phone:</strong> +977-9800000004</p>
+            <p><strong>Office Address:</strong> Kalanki, Kathmandu</p>
+        </div>
+
+        <!-- Municipality and Metropolitan Offices -->
+        <h3>Municipality & Metropolitan Offices</h3>
+        <div class="contact-card">
+            <p><strong>Email:</strong> municipality@ccs.com</p>
+            <p><strong>Phone:</strong> +977-9800000005</p>
+            <p><strong>Office Address:</strong> Bhaktapur</p>
+        </div>
+
+        <div class="contact-card">
+            <p><strong>Email:</strong> metro@ccs.com</p>
+            <p><strong>Phone:</strong> +977-9800000006</p>
+            <p><strong>Office Address:</strong> Lalitpur</p>
+        </div>
+
+        <!-- Police Stations -->
+        <h3>Police Stations</h3>
+        <div class="contact-card">
+            <p><strong>Email:</strong> police@ccs.com</p>
+            <p><strong>Emergency Number:</strong> 100</p>
+            <p><strong>Office Address:</strong> Various locations in Kathmandu</p>
+        </div>
+
+        <!-- Fire Department -->
+        <h3>Fire Department</h3>
+        <div class="contact-card">
+            <p><strong>Email:</strong> fire@ccs.com</p>
+            <p><strong>Emergency Number:</strong> 101</p>
+            <p><strong>Office Address:</strong> Thamel, Kathmandu</p>
+        </div>
+
+        <!-- Disaster Management Office -->
+        <h3>Disaster Management Office</h3>
+        <div class="contact-card">
+            <p><strong>Email:</strong> disaster@ccs.com</p>
+            <p><strong>Emergency Number:</strong> 103</p>
+            <p><strong>Office Address:</strong> Pulchowk, Lalitpur</p>
+        </div>
+
+        <!-- Ward Offices -->
+        <h3>Ward Offices (Kathmandu Metropolitan City)</h3>
+        <% for (let i = 1; i <= 32; i++) { %>
+            <div class="contact-card">
+                <h3>Ward <%= i %> Office</h3>
+                <p><strong>Email:</strong> ward<%= i %>@ccs.com</p>
+                <p><strong>Phone:</strong> +977-98000000<%= i + 10 %></p>
+                <p><strong>Office Address:</strong> Ward <%= i %>, Kathmandu</p>
+            </div>
+        <% } %>
+
+        <!-- Emergency Services -->
+        <h3>Emergency Services</h3>
+        <div class="contact-card">
+            <p><strong>Ambulance:</strong> 102</p>
+            <p><strong>Fire Brigade:</strong> 101</p>
+            <p><strong>Disaster Management:</strong> 103</p>
+        </div>
+    </div>
+
+    <button id="back-to-home">Back to Home</button>
+</div>
+
+</body>
+</html>

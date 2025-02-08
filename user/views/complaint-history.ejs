@@ -19,137 +19,140 @@
             <a href="/dashboard">Dashboard</a>
             <a href="/post-complaint">Post a Complaint</a>
             <a href="/complaint-history">Complaint History</a>
-            <a href="#contact-us">Contact Us</a>
+            <a href="/contact-us">Contact Us</a>
         </nav>
         <div class="profile-container">
             <div class="dropdown">
               <button class="dropbtn">Menu</button>
               <div class="dropdown-content">
                   <a href="/settings">Settings</a>
-                  <a href="#help">Profile</a>
+                  <a href="/profile">Profile</a>
                   <a href="/logout">Logout</a>
               </div>
           </div>
           </div>
         </div>
-
-<!-- Main Content -->
-<main>
+ <!-- Main Content -->
+ <main>
     <h2 class="main-title">Complaint History</h2>
     <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Complaint Number</th>
-                    <th>Complainant Name</th>
-                    <th>Registration Date</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% complaints.forEach(complaint => { %>
-                    <tr data-category="<%= complaint.category %>"
-                        data-description="<%= complaint.description %>"
-                        data-location="<%= complaint.location %>"
-                        data-status="<%= complaint.status %>"
-                        data-file="<%= complaint.file ? complaint.file : 'No file attached' %>">
-                        <td><%= complaint.complaintNumber %></td>
-                        <td><%= complaint.userId.first_name %> <%= complaint.userId.last_name %></td>
-                        <td><%= complaint.formattedDate %></td>
-                        <td>
-                            <button class="view-details-btn" data-complaint-id="<%= complaint._id %>">View Details</button>
-                            <button class="edit-btn" data-complaint-id="<%= complaint._id %>">Edit</button>
-                            <button class="delete-btn" data-complaint-id="<%= complaint._id %>">Delete</button>
-                        </td>
-                    </tr>
-                <% }); %>
-            </tbody>
-            
-        </table>
+      <table>
+        <thead>
+          <tr>
+            <th>Complaint Number</th>
+            <th>Registration Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% complaints.forEach(complaint => { %>
+            <tr data-category="<%= complaint.category %>"
+                data-description="<%= complaint.description %>"
+                data-location="<%= complaint.location %>"
+                data-status="<%= complaint.status %>"
+                data-file="<%= complaint.file ? complaint.file : 'No file attached' %>"
+                data-lat="<%= complaint.latitude %>"
+                data-lng="<%= complaint.longitude %>">
+              <td><%= complaint.complaintNumber %></td>
+              <td><%= complaint.formattedDate %></td>
+              <td>
+                <button class="view-details-btn" data-complaint-id="<%= complaint._id %>">View Details</button>
+                <button class="edit-btn" data-id="<%= complaint._id %>" 
+                        data-category="<%= complaint.category %>" 
+                        data-description="<%= complaint.description %>" 
+                        data-location="<%= complaint.location %>" 
+                        data-file="<%= complaint.file %>" 
+                        data-lat="<%= complaint.latitude %>" 
+                        data-lng="<%= complaint.longitude %>">
+                  Edit
+                </button>
+                <button class="delete-btn" data-complaint-id="<%= complaint._id %>">Delete</button>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
     </div>
-</main>
+  </main>
 
-<!-- View Details Modal -->
-<div id="viewDetailsModal" class="modal">
+  <!-- View Details Modal -->
+  <div id="viewDetailsModal" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
-        <h3>Complaint Details</h3>
-        <p><strong>Complaint Number:</strong> <span id="detail-complaintNumber"></span></p>
-        <p><strong>Complainant Name:</strong> <span id="detail-complainant"></span></p>
-        <p><strong>Category:</strong> <span id="detail-category"></span></p>
-        <p><strong>Description:</strong> <span id="detail-description"></span></p>
-        <p><strong>Location:</strong> <span id="detail-location"></span></p>
-        <p><strong>Registration Date:</strong> <span id="detail-date"></span></p>
-        <p><strong>Status:</strong> <span id="detail-status"></span></p>
-        <p id="detail-file"></p>
+      <span class="close">&times;</span>
+      <h3>Complaint Details</h3>
+      <p><strong>Complaint Number:</strong> <span id="detail-complaintNumber"></span></p>
+      <p><strong>Category:</strong> <span id="detail-category"></span></p>
+      <p><strong>Description:</strong> <span id="detail-description"></span></p>
+      <p><strong>Location:</strong> <span id="detail-location"></span></p>
+      <p><strong>Registration Date:</strong> <span id="detail-date"></span></p>
+      <p><strong>Status:</strong> <span id="detail-status"></span></p>
+      <p id="detail-file"></p>
     </div>
-</div>
+  </div>
 
-<!-- Edit Complaint Modal -->
-<div id="editModal" class="modal">
+  <!-- Edit Complaint Modal -->
+  <div id="editModal" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
       <h2 class="modal-title">Edit Complaint</h2>
       <form id="editComplaintForm" enctype="multipart/form-data">
         <input type="hidden" id="edit-complaint-id" name="complaintId">
-        <!-- Category Selection -->
+        <!-- Complaint Category -->
         <div class="form-group">
           <label for="edit-category">Complaint Category</label>
           <select id="edit-category" name="category" required>
-            <% categories.forEach(function(category) { %>
-              <option value="<%= category._id %>"><%= category.name %></option>
-            <% }); %>
+            <% if (categories && categories.length > 0) { %>
+              <% categories.forEach(function(category) { %>
+                <option value="<%= category._id %>"><%= category.name %></option>
+              <% }); %>
+            <% } else { %>
+              <option disabled selected>No categories available</option>
+            <% } %>
           </select>
         </div>
-
-            <!-- Complaint Description -->
-            <div class="form-group">
-                <label for="edit-description">Complaint Description</label>
-                <textarea id="edit-description" name="description" rows="5" required></textarea>
-            </div>
-
-            <!-- Location Input (Auto-filled by Map) -->
-            <div class="form-group">
-                <label for="edit-location">Location Name</label>
-                <input type="text" id="edit-location" name="location" readonly required>
-            </div>
-
-            <!-- Leaflet Map -->
-            <div id="edit-map" style="height: 300px;"></div>
-            <input type="hidden" id="edit-latitude" name="latitude">
-            <input type="hidden" id="edit-longitude" name="longitude">
-
-            <!-- File Upload with Preview -->
-            <div class="form-group">
-                <label for="edit-file">Upload Image/Video</label>
-                <input type="file" id="edit-file" name="file" accept="image/*, video/*">
-                <div id="edit-file-preview"></div>
-            </div>
-
-            <!-- Previous File (if any) -->
-            <div class="form-group" id="previous-file-container">
-                <label>Previous File:</label>
-                <div id="previous-file"></div>
-            </div>
-
-            <!-- Submit Button -->
-            <div class="form-group">
-                <button type="submit" class="update-btn">Update Complaint</button>
-            </div>
-        </form>
+        <!-- Complaint Description -->
+        <div class="form-group">
+          <label for="edit-description">Complaint Description</label>
+          <textarea id="edit-description" name="description" rows="5" required></textarea>
+        </div>
+        <!-- Location Input (Auto-filled by Map) -->
+        <div class="form-group">
+          <label for="edit-location">Location Name</label>
+          <input type="text" id="edit-location" name="location" readonly required>
+        </div>
+        <!-- Leaflet Map -->
+        <div id="edit-map" style="height: 300px;"></div>
+        <input type="hidden" id="edit-latitude" name="latitude">
+        <input type="hidden" id="edit-longitude" name="longitude">
+        <!-- File Upload with Preview -->
+        <div class="form-group">
+          <label for="edit-file">Upload Image/Video</label>
+          <input type="file" id="edit-file" name="file" accept="image/*, video/*">
+          <div id="edit-file-preview"></div>
+        </div>
+        <!-- Previous File (if any) -->
+        <div class="form-group" id="previous-file-container">
+          <label>Previous File:</label>
+          <div id="previous-file"></div>
+        </div>
+        <!-- Submit Button -->
+        <div class="form-group">
+          <button type="submit" class="update-btn">Update Complaint</button>
+        </div>
+      </form>
     </div>
-</div>
+  </div>
 
-
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="modal">
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
-        <h3>Are you sure you want to delete this complaint?</h3>
-        <button id="confirmDelete">Yes, Delete</button>
-        <button class="close">Cancel</button>
+      <span class="close">&times;</span>
+      <h3>Are you sure you want to delete this complaint?</h3>
+      <button id="confirmDelete">Yes, Delete</button>
+      <button class="close">Cancel</button>
     </div>
-</div>
+  </div>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </body>
 </html>

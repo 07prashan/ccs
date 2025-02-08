@@ -1,0 +1,146 @@
+/* General Reset */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+/* Title Styling */
+.main-title {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 20px 0;
+    color: #1a73e8;
+}
+
+/* Navbar Styling */
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #1a73e8;
+    padding: 10px 20px;
+  }
+  
+  .navbar nav {
+    display: flex;
+    gap: 20px;
+  }
+  
+  .navbar nav a,
+  .dropdown .dropbtn {
+    color: white;
+    text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    background-color: #1a73e8;
+    font-size: 1em;
+    transition: transform 0.2s, color 0.2s;
+    cursor: pointer;
+  }
+  
+  .navbar nav a:hover,
+  .dropdown .dropbtn:hover {
+    color: red;
+  }
+  
+  .navbar nav a:active {
+    transform: scale(1.1);
+  }
+  
+  /* Profile Link */
+  .profile-container {
+    margin-left: auto;
+    position: relative;
+  }
+  
+  /* Dropdown Styling */
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+    border-radius: 5px;
+  }
+  
+  .dropdown-content a {
+    color: black;
+    padding: 10px;
+    text-decoration: none;
+    display: block;
+    border-radius: 5px;
+    transition: transform 0.2s, color 0.2s;
+  }
+  
+  .dropdown-content a:hover {
+    color: red;
+    background-color: #f1f1f1;
+  }
+  
+  .dropdown:hover .dropdown-content {
+    display: block;
+  }
+/* Container Styling */
+.container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Section Styling */
+.contact-section {
+    margin: 20px 0;
+}
+
+.contact-section h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: #1a73e8;
+}
+
+.contact-card {
+    background-color: #f9f9f9;
+    border-left: 5px solid #1a73e8;
+    padding: 15px 20px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.contact-card p {
+    margin: 5px 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #333;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .navbar nav a {
+        margin: 0 10px;
+        font-size: 0.9rem;
+    }
+
+    .dropbtn {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    .contact-section h2 {
+        font-size: 1.3rem;
+    }
+}

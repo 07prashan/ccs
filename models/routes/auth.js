@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcrypt');  // Import bcrypt
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
@@ -18,12 +19,24 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ error: 'Email already exists' });
     }
 
-    // Create a new user
-    const user = new User({ firstName, lastName, contactNo, email, password, role });
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new user with hashed password
+    const user = new User({
+      firstName,
+      lastName,
+      contactNo,
+      email,
+      password: hashedPassword,  // Save hashed password
+      role,
+    });
+
     await user.save();
 
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -40,16 +53,21 @@ router.post('/login', async (req, res) => {
     }
 
     // Verify password
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);  // Ensure hashed comparison
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
     // Generate JWT
-    const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
     res.status(200).json({ message: 'Login successful', token });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Server error' });
   }
 });

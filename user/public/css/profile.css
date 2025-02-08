@@ -1,0 +1,112 @@
+/* General Reset */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f8f9fa;
+  color: #333;
+}
+
+/* Title Styling */
+.main-title {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 20px 0;
+  color: #1a73e8;
+}
+
+/* Navbar Styling */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #1a73e8;
+  padding: 10px 20px;
+}
+
+.navbar nav {
+  display: flex;
+  gap: 20px;
+}
+
+.navbar nav a,
+.dropdown .dropbtn {
+  color: white;
+  text-decoration: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  background-color: #1a73e8;
+  font-size: 1em;
+  transition: transform 0.2s, color 0.2s;
+  cursor: pointer;
+}
+
+.navbar nav a:hover,
+.dropdown .dropbtn:hover {
+  color: red;
+}
+
+.navbar nav a:active {
+  transform: scale(1.1);
+}
+
+/* Profile Link */
+.profile-container {
+  margin-left: auto;
+  position: relative;
+}
+
+/* Dropdown Styling */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  border-radius: 5px;
+}
+
+.dropdown-content a {
+  color: black;
+  padding: 10px;
+  text-decoration: none;
+  display: block;
+  border-radius: 5px;
+  transition: transform 0.2s, color 0.2s;
+}
+
+.dropdown-content a:hover {
+  color: red;
+  background-color: #f1f1f1;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+  /* Profile Card Styling */
+.container {
+    max-width: 600px;
+    margin: 30px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-card h2 {
+    font-size: 1.8rem;
+    color: #1a73e8;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.profile-details p {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #333;
+}

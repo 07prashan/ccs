@@ -172,10 +172,15 @@ button:hover {
     text-align: center;
 }
 
-.success-message {
-    color: green;
-}
-
 .error-message {
     color: red;
-}
+    font-size: 0.875rem;
+    margin-top: 4px;
+  }
+  
+  .success-message {
+    color: green;
+    font-size: 1rem;
+    margin-top: 8px;
+  }
+  
